@@ -416,6 +416,7 @@ async function revealSelectionPlayer1(){
         RPSSelectReveal.value = "";
         keyRPSReveal.value = "";
         signatureSpendbundleReveal.value = "";
+        signatureSpendbundleFeeReveal.value = "";
     }
     
 }
