@@ -1,0 +1,18 @@
+(mod (
+    GAME_SERVER_PUBLIC_KEY
+    GAME_BASE_PUZZLE_HASH
+    CoinIdGame
+)
+
+    (include "condition_codes.clib")
+
+    (defun-inline Delete (GAME_SERVER_PUBLIC_KEY CoinIdGame)
+        (list
+            (list AGG_SIG_ME GAME_SERVER_PUBLIC_KEY (sha256 CoinIdGame))
+        )
+    )
+
+   
+    ;Main function
+    (Delete GAME_SERVER_PUBLIC_KEY CoinIdGame)
+)

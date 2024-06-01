@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chia Rock Paper & Scissors Game - My Game Wallet </title>
+    <link rel="icon" href="/static/images/logo_150x150.jpg" type="image/jpg">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/7.0.0/mdb.dark.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism.min.css" rel="stylesheet" />
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+
+
+</head>
+
+<body>
+    <header>
+        <nav class="navbar navbar-expand-lg ">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="/">
+                    <img src="/static/images/logo_150x150.jpg" height="20" alt="Chia RPS Game" loading="lazy" />
+                    Chia RPS Game
+                </a>
+                <button class="navbar-toggler" type="button" data-mdb-collapse-init data-mdb-target="#navbarNav"
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        <li class="nav-item ">
+                            <a class="nav-link" href="/openGames">Active Games</a>
+                        </li>
+                        <li class="nav-item ">
+                            <a class="nav-link" href="/historyGames">History Games</a>
+                        </li>
+                        <li class="nav-item ">
+                            <a class="nav-link" href="/leaderboard">Leaderboard</a>
+                        </li>
+                        <li class="nav-item ">
+                            <a class="nav-link" href="#">About</a>
+                        </li>
+
+                    </ul>
+                </div>
+                <div class="dropdown">
+                    <a data-mdb-dropdown-init class="dropdown-toggle d-flex align-items-center hidden-arrow" href="#"
+                        id="navbarDropdownMenuAvatar" role="button" aria-expanded="false">
+                        <img src="/static/images/ProfilePictureNotLoged.jpg" id="ProfilePicture" class="rounded-circle" height="25"
+                             loading="lazy" />
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownMenuAvatar" id="UserUI">
+                        <li>
+                            <a class="dropdown-item"  >Login</a>
+                        </li>
+                       
+                    </ul>
+                </div>
+
+            </div>
+        </nav>
+
+    </header>
+    <main class="container mt-4" style="margin-top: 10px !important;">
+        <div class="container my-5" style="margin-top: -6px !important;">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="wallet-container text-center wallet-info">
+                        <i class="fas fa-wallet fa-5x"></i>
+                        <p></p>
+                        <button class="btn btn-success btn " onclick="UserSession.chargeWallet()">
+                            <i class="fas fa-coins"></i> Charge
+                        </button>
+
+                        <div class="wallet-balance  ">
+                            <h2><p id="walletBalance">----</p></h2>
+                            <p>In <span id="numberCoins">-</span> coin(s)</p>
+                        </div>
+                        <div class="wallet-info">
+                            <p class="text-center" style="margin-bottom: 0px;">User DID</p>
+                            <p style="text-align: center; overflow-x: auto; margin-top: -6px !important;" id="playerDID">----</p>
+                            <p class="text-center" style="margin-bottom: 0px;">User Public Key</p>
+                            <p style="text-align: center; overflow-x: auto; margin-top: -6px !important; font-size: 11px;" id="playerPubKey">----</p>
+                            <p style="margin-bottom: 0px;">Wallet Address:</p>
+                            <p id="walletAddress" style="overflow-x: auto;margin-top: -6px !important;">----</p>
+                            <p style="margin-bottom: 0px;">Wallet Puzzle Hash:</p>
+                            <p id="walletPuzzleHash" style="overflow-x: auto;margin-top: -6px !important;">----</p>
+                        </div>
+                    </div>
+                    <br>
+                    <div id="joinPlayer1Cointainer" style="text-align: center; border-style: solid; padding: 10px;">
+                        <h3>Create Game</h3>
+                        <div class="coin-select form-group">
+                            <label for="coinIdSelect">Select a coin to create Game:</label>
+                            <select id="coinIdSelect" class="form-select">
+                                <option value="">Select a coin to create game</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="feeSpendbundle">Calculated Fee for 60 seconds:</label>
+                            <input type="number" class="form-control" id="feeSpendbundle"  value="0" min="0.000000000001" step="0.000000000001">
+                        </div>
+                        <div class="form-group">
+                            <label for="betAmount">Bet Amount:</label>
+                            <input type="number" class="form-control" id="betAmount" placeholder="Enter the bet amount" min="0.000000000001" step="0.000000000001">
+                        </div>
+                        <div class="form-group">
+                            <label for="amountChangeCoin">Change to Wallet Coin:</label>
+                            <p id="amountChangeCoin">----</p>
+                        </div>
+                        <div class="form-group">
+                            <label for="RPSSelect">Select 🪨 📄 or ✂️:</label>
+                            <select id="RPSSelect" class="form-select">
+                                <option value="">Choose your option</option>
+                                <option value="1">🪨 Rock</option>
+                                <option value="2">📄 Paper</option>
+                                <option value="3">✂️ Scissors</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="keyRPS" title="This is used to hide your selection of rock, paper, or scissors to start the game and commit your selection, which you will need to reveal later to conclude the game.">Set your key:</label>
+                            <p>This is used to hide your selection of rock, paper, or scissors to start the game and commit your selection, which you will need to reveal later to conclude the game. PLEASE SAVE THIS KEY LINKED TO YOUR SELECTION!</p>
+                            <input type="text" class="form-control" id="keyRPS" placeholder="Enter your key.. ex: MiKeySecure">
+                        </div>
+                        <div class="form-group">
+                            <label for="selectionRPSHash">Selection Hash:</label>
+                            <input type="text" class="form-control" id="selectionRPSHash"  readonly >
+                        </div>
+                        <div class="form-group">
+                            <label for="cashOutAddress">Cash Out Address:</label>
+                            <input type="text" class="form-control" id="cashOutAddress"   >
+                        </div>
+                        <div class="form-group position-relative">
+                            <label class="customLabel">Sign the message to add the spendbundle</label>
+                            <p>You are signing:</p>
+                            <p style="overflow-x: auto;margin-top: -20px !important;">actionCreteGame(1)+betAmount+fee+GameHash+Selection+walletPlayerHash+playerOracleHash+CoinId+GenesisChallenge</p>
+                            <pre class="precustom"><code id="cmdSingByDID" >chia rpc wallet sign_message_by_id '{"id":"<span id="didCmdSingature"></span>","message":"<span id="didCmdMessageSingature"></span>","is_hex":"True","safe_mode":"False"}'</code>
+                            </pre>
+                            <button type="button" class="btn position-absolute copy-btn" style="top: 74px; "
+                                onclick="Utils.copyToClipboard('#cmdSingByDID')">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                        <div class="form-group">
+                            <label for="signatureSpendbundle">Signature:</label>
+                            <input type="text" class="form-control" id="signatureSpendbundle" placeholder="Enter the signature">
+                        </div>
+                        <br>
+                        <button  class="btn btn-primary btn-lg" onclick="joinPlayer1()">
+                            <i class="fas fa-money-bill"></i> Create Game
+                        </button>
+                    </div>
+
+                    <div class="form-group" style="position: relative;">
+                        <h5 style="text-align: center;">Pending Transactions</h5>
+                        <div class="row" id="pendingTransactions">
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="wallet-info">
+                        <p style="text-align: center;">Wallet Puzzle Reveal:</p>
+                        <p>
+                            <textarea style="min-height: 200px;" id="walletPuzzleReveal" class="form-control">----</textarea>
+                        </p>
+                        <p style="text-align: center;">Wallet Puzzle Reveal Disassembled:</p>
+                        <p>
+                            <textarea style="min-height: 200px;" id="walletPuzzleRevealDisassembled" class="form-control">----</textarea>
+                        </p>
+                    </div>
+                    <div class="game-info">
+                        <p style="text-align: center;">Game Puzzle Reveal:</p>
+                        <p>
+                            <textarea style="min-height: 200px;" id="gamePuzzleReveal" class="form-control">----</textarea>
+                        </p>
+                        <p style="text-align: center;">Game Puzzle Reveal Disassembled:</p>
+                        <p>
+                            <textarea style="min-height: 200px;" id="gamePuzzleRevealDisassembled" class="form-control">----</textarea>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <script src="/static/js/libs/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/7.0.0/mdb.umd.min.js"></script>
+    <script src="https://unpkg.com/@walletconnect/sign-client@2.10.6/dist/index.umd.js"></script>
+    <script src="https://unpkg.com/@walletconnect/types@2.0.0-beta.55/dist/umd/index.min.js"></script>
+    <script src="https://unpkg.com/@walletconnect/utils@2.0.0-beta.55/dist/umd/index.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script src="/static/js/Utils.js"></script>
+    <script src="/static/js/ModalGeneric.js"></script>
+    <script src="/static/js/ModalChiaWalletConnect.js"></script>
+    <script src="/static/js/ChiaWalletConnect.js"></script>
+    <script src="/static/js/Session.js"></script>
+    <script src="/static/js/createGame.js"></script>
+</body>
+
+</html>

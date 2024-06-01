@@ -1,0 +1,83 @@
+.precustom {
+    white-space: pre-wrap; 
+    word-break: break-word; 
+    background-color: #012456;
+    color: #ffffff;
+    padding: 10px;
+    border-radius: 5px;
+    overflow-x: auto;
+    text-align: left;
+}
+
+.precustom code {
+    font-family: 'Consolas', 'Courier New', monospace;
+}
+
+.copy-btn {
+    color: #ffffff;
+    background-color: #014f86;
+    border: none;
+    top: 5px;
+    right: 5px;
+    cursor: pointer;
+}
+
+.copy-btn:hover {
+    background-color: #0264ad;
+}
+
+.customLabel{
+    color:#dee2e6;
+}
+.dropdown-item{
+    cursor: pointer;
+}
+.wallet-info p {
+    margin-top: 0; 
+    margin-bottom: 5px; 
+}
+.copy-icon{
+    cursor: pointer;
+}
+#WalletAddress,
+#WalletPuzzleHash{
+    color:darkgreen;
+    
+}
+.cardWhite{
+    background-color: #ffffff;
+   
+}
+.card {
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    margin: 10px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 300px;
+}
+.card-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+.card-title {
+    font-size: 1.2em;
+    margin-bottom: 10px;
+}
+.card-content {
+    margin-bottom: 10px;
+}
+.card-button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+.card-button:hover {
+    background-color: #0056b3;
+}

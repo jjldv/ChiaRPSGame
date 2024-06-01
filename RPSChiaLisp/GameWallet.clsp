@@ -1,0 +1,93 @@
+(mod (
+    PUBKEY
+    Action ; 0 - CashOut, 1 - Bet, 2 - RetireBet
+    ThisCoinHash
+    ThisCoinAmount 
+    Fee
+    GamePuzzleHash
+    BetAmount
+    Selection
+    WalletPlayerHash
+    PlayerOracleHash
+
+)
+
+    (include "condition_codes.clib")
+
+    (defun-inline CashOut ()
+        (list
+            (list AGG_SIG_ME PUBKEY (sha256 Action BetAmount Fee WalletPlayerHash))
+            (list ASSERT_MY_AMOUNT ThisCoinAmount)
+            (list CREATE_COIN WalletPlayerHash (- ThisCoinAmount Fee) (list "Cash Out From Wallet Coin"))
+            (list RESERVE_FEE Fee)
+        )
+    )
+
+    (defun-inline CreateGame ()
+        (list
+            (list ASSERT_MY_AMOUNT ThisCoinAmount)
+            (list ASSERT_MY_PUZZLEHASH ThisCoinHash)
+            (list AGG_SIG_ME PUBKEY (sha256 Action BetAmount Fee GamePuzzleHash Selection WalletPlayerHash PlayerOracleHash))
+            (if (> (- ThisCoinAmount BetAmount Fee) 0)
+                (list CREATE_COIN ThisCoinHash (- ThisCoinAmount BetAmount Fee))
+                (list 1)
+            )
+            (list CREATE_COIN GamePuzzleHash BetAmount)
+            (list RESERVE_FEE Fee)
+            (list CREATE_PUZZLE_ANNOUNCEMENT (sha256 GamePuzzleHash Selection WalletPlayerHash PlayerOracleHash))
+        )
+    )
+    (defun-inline Send2Game ()
+        (list
+            (list ASSERT_MY_AMOUNT ThisCoinAmount)
+            (list ASSERT_MY_PUZZLEHASH ThisCoinHash)
+            (list AGG_SIG_ME PUBKEY (sha256 Action BetAmount Fee GamePuzzleHash Selection WalletPlayerHash PlayerOracleHash))
+            (if (> (- ThisCoinAmount BetAmount Fee) 0)
+                (list CREATE_COIN ThisCoinHash (- ThisCoinAmount BetAmount Fee))
+                (list 1)
+            )
+            (list RESERVE_FEE Fee)
+            (list CREATE_PUZZLE_ANNOUNCEMENT (sha256 GamePuzzleHash Selection WalletPlayerHash PlayerOracleHash))
+            (list ASSERT_PUZZLE_ANNOUNCEMENT (sha256 GamePuzzleHash ThisCoinHash))
+
+        )
+    )
+    (defun-inline SetFee ()
+        (list
+            (list ASSERT_MY_AMOUNT ThisCoinAmount)
+            (list AGG_SIG_ME PUBKEY (sha256 Action Fee ThisCoinAmount GamePuzzleHash ThisCoinHash))
+            (if (> (- ThisCoinAmount Fee) 0)
+                (list CREATE_COIN ThisCoinHash (- ThisCoinAmount Fee))
+                (list 1)
+            )
+            (list ASSERT_PUZZLE_ANNOUNCEMENT (sha256 GamePuzzleHash ThisCoinHash))
+            (list RESERVE_FEE Fee)
+        )
+    )
+    ;Main function
+    (if (> BetAmount ThisCoinAmount)
+        (x "Not enough coins to bet")
+        (if (= Action 0)
+            (if (= BetAmount 0)
+                (CashOut)
+                (x "BetAmount should be 0 for CashOut")
+            )
+            (if (= Action 1)
+                (if (= ThisCoinAmount 0)
+                    (x "ThisCoinAmount should be greater than 0")
+                    (if (= BetAmount 0)
+                        (x "BetAmount should be greater than 0")
+                        (CreateGame)
+                    )
+                )
+                (if (= Action 2)
+                    (Send2Game)
+                    (if (= Action 3)
+                        (SetFee)
+                        (x "Invalid Action, v1.0.0")
+                    )
+                )
+            )
+        )
+    )
+)

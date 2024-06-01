@@ -1,0 +1,176 @@
+(mod (
+    MOD_HASH
+    PUBLIC_ORACLE_PUZZLE_HASH
+    PLAYER1_ORACLE_PUZZLE_HASH
+    PLAYER1_WALLET_PUZZLE_HASH
+    PUBLIC_KEY_PLAYER1
+    CompromisePlayer1
+    PuzzleHashPlayer1
+    Player2WalletPuzzleHash
+    PublicKeyPlayer2
+    SelectionPlayer2
+    PuzzleHashPlayer2
+    Player2OraclePuzzleHash
+    SelectionPlayer1
+    SecretKeyPlayer1
+    Action
+    ThisCoinAmount
+    Fee
+)
+
+    (include condition_codes.clib)
+    (include curry_and_treehash.clib)
+
+    
+    (defun-inline Close ()
+        (list
+            (list ASSERT_MY_AMOUNT ThisCoinAmount)
+            (list ASSERT_SECONDS_RELATIVE 86400) ; 1 day to close
+            (list ASSERT_MY_PUZZLEHASH (GetPuzzlePlayer1Joined))
+            (list AGG_SIG_ME PUBLIC_KEY_PLAYER1 (sha256 Action Fee PuzzleHashPlayer1))
+            (list CREATE_COIN PuzzleHashPlayer1 (- ThisCoinAmount Fee) (list "Game Closed by Player 1"))
+            (list CREATE_COIN (sha256 PLAYER1_ORACLE_PUZZLE_HASH) 0 (list "Player History Game"))
+            (list CREATE_COIN (sha256 PUBLIC_ORACLE_PUZZLE_HASH) 0 (list "Public History Game"))
+            (list RESERVE_FEE Fee)
+
+        )
+    )
+    (defun-inline JoinPlayer1 ()
+        (list
+            (list ASSERT_MY_AMOUNT ThisCoinAmount)
+            (list ASSERT_MY_PUZZLEHASH (GetPuzzleInitialStage))
+            (list ASSERT_PUZZLE_ANNOUNCEMENT (sha256 PLAYER1_WALLET_PUZZLE_HASH (sha256 (GetPuzzleInitialStage) CompromisePlayer1 PuzzleHashPlayer1 PLAYER1_ORACLE_PUZZLE_HASH)))
+            (list CREATE_COIN (GetPuzzlePlayer1Joined) ThisCoinAmount (list (sha256 (GetPuzzlePlayer1Joined))))
+            (list CREATE_COIN PLAYER1_ORACLE_PUZZLE_HASH 0 (list (sha256 (GetPuzzlePlayer1Joined))))
+            (list CREATE_COIN PUBLIC_ORACLE_PUZZLE_HASH 0 (list (sha256 (GetPuzzlePlayer1Joined))))
+        )
+    )
+    (defun-inline JoinPlayer2 ()
+        (if (any (= SelectionPlayer2 1) (= SelectionPlayer2 2) (= SelectionPlayer2 3))
+            (list
+                (list ASSERT_MY_AMOUNT ThisCoinAmount)
+                (list ASSERT_MY_PUZZLEHASH (GetPuzzlePlayer1Joined))
+                (list CREATE_PUZZLE_ANNOUNCEMENT Player2WalletPuzzleHash)
+                (list ASSERT_PUZZLE_ANNOUNCEMENT (sha256 Player2WalletPuzzleHash (sha256 (GetPuzzlePlayer1Joined) SelectionPlayer2 PuzzleHashPlayer2 Player2OraclePuzzleHash)))
+                (list CREATE_COIN (GetPuzzlePlayer2Joined) (* 2 ThisCoinAmount) (list (sha256 (GetPuzzlePlayer2Joined))))
+                (list CREATE_COIN PLAYER1_ORACLE_PUZZLE_HASH 0 (list (sha256 (GetPuzzlePlayer2Joined))))
+                (list CREATE_COIN PUBLIC_ORACLE_PUZZLE_HASH 0 (list (sha256 (GetPuzzlePlayer2Joined))))
+                (list CREATE_COIN Player2OraclePuzzleHash 0 (list (sha256 (GetPuzzlePlayer2Joined))))
+            )
+            (x "Invalid SelectionPlayer2") 
+        )
+    )
+    (defun-inline RevealPlayer1 ()
+        (if (any (= SelectionPlayer1 1) (= SelectionPlayer1 2) (= SelectionPlayer1 3))
+            (if (= CompromisePlayer1 (sha256 SelectionPlayer1 SecretKeyPlayer1))
+                (if (= SelectionPlayer1 SelectionPlayer2)
+                    (list
+                        (list ASSERT_MY_AMOUNT ThisCoinAmount)
+                        (list ASSERT_MY_PUZZLEHASH (GetPuzzlePlayer2Joined))
+                        (list CREATE_PUZZLE_ANNOUNCEMENT PLAYER1_WALLET_PUZZLE_HASH)
+                        (list AGG_SIG_ME PUBLIC_KEY_PLAYER1 (sha256 Action SelectionPlayer1 SecretKeyPlayer1))
+                        (list CREATE_COIN PuzzleHashPlayer1 (/ ThisCoinAmount 2) (list "Tie RPS Game"))
+                        (list CREATE_COIN PuzzleHashPlayer2 (/ ThisCoinAmount 2) (list "Tie RPS Game"))
+                        (list CREATE_COIN (sha256 PLAYER1_ORACLE_PUZZLE_HASH) 0 (list "Player History Game"))
+                        (list CREATE_COIN (sha256 PUBLIC_ORACLE_PUZZLE_HASH) 0 (list "Public History Game"))
+                        (list CREATE_COIN (sha256 Player2OraclePuzzleHash) 0 (list "Player History Game"))
+                    )
+                    (if (any (= (concat SelectionPlayer1 SelectionPlayer2) (concat 1 3)) (= (concat SelectionPlayer1 SelectionPlayer2) (concat 2 1)) (= (concat SelectionPlayer1 SelectionPlayer2) (concat 3 2)))
+                        (list
+                            (list ASSERT_MY_AMOUNT ThisCoinAmount)
+                            (list ASSERT_MY_PUZZLEHASH (GetPuzzlePlayer2Joined))
+                            (list CREATE_PUZZLE_ANNOUNCEMENT PLAYER1_WALLET_PUZZLE_HASH)
+                            (list AGG_SIG_ME PUBLIC_KEY_PLAYER1 (sha256 Action SelectionPlayer1 SecretKeyPlayer1))
+                            (list CREATE_COIN PuzzleHashPlayer1 ThisCoinAmount (list "Winner as Player 1 RPS Game"))
+                            (list CREATE_COIN (sha256 PLAYER1_ORACLE_PUZZLE_HASH) 0 (list "Player History Game"))
+                            (list CREATE_COIN (sha256 PUBLIC_ORACLE_PUZZLE_HASH) 0 (list "Public History Game"))
+                            (list CREATE_COIN (sha256 Player2OraclePuzzleHash) 0 (list "Player History Game"))
+
+                        )
+                        (list
+                            (list ASSERT_MY_AMOUNT ThisCoinAmount)
+                            (list ASSERT_MY_PUZZLEHASH (GetPuzzlePlayer2Joined))
+                            (list CREATE_PUZZLE_ANNOUNCEMENT PLAYER1_WALLET_PUZZLE_HASH)
+                            (list AGG_SIG_ME PUBLIC_KEY_PLAYER1 (sha256 Action SelectionPlayer1 SecretKeyPlayer1))
+                            (list CREATE_COIN PuzzleHashPlayer2 ThisCoinAmount (list "Winner as Player 2 RPS Game"))
+                            (list CREATE_COIN (sha256 PLAYER1_ORACLE_PUZZLE_HASH) 0 (list "Player History Game"))
+                            (list CREATE_COIN (sha256 PUBLIC_ORACLE_PUZZLE_HASH) 0 (list "Public History Game"))
+                            (list CREATE_COIN (sha256 Player2OraclePuzzleHash) 0 (list "Player History Game"))
+
+                        )
+                    )
+                )
+                (x "Invalid Compromise Player 1")
+            )
+            (x "Invalid Selection Player 1")
+        )
+    )
+
+    (defun-inline ClaimPlayer2 ()
+        (list
+            (list ASSERT_MY_AMOUNT ThisCoinAmount)
+            (list ASSERT_SECONDS_RELATIVE 86400) ; 1 day to claim
+            (list ASSERT_MY_PUZZLEHASH (GetPuzzlePlayer2Joined))
+            (list CREATE_PUZZLE_ANNOUNCEMENT Player2WalletPuzzleHash)
+            (list AGG_SIG_ME PublicKeyPlayer2 (sha256 Action Fee))
+            (list CREATE_COIN PuzzleHashPlayer2 (- ThisCoinAmount Fee) (list "Claim RPS Game,Player 1 did not reveal"))
+            (list CREATE_COIN (sha256 PLAYER1_ORACLE_PUZZLE_HASH) 0 (list "Player History Game"))
+            (list CREATE_COIN (sha256 PUBLIC_ORACLE_PUZZLE_HASH) 0 (list "Public History Game"))
+            (list CREATE_COIN (sha256 Player2OraclePuzzleHash) 0 (list "Player History Game"))
+            (list RESERVE_FEE Fee)
+        )
+    )
+
+    (defun-inline GetPuzzleInitialStage ()
+        (puzzle-hash-of-curried-function MOD_HASH
+            (sha256 1 PUBLIC_KEY_PLAYER1)
+            (sha256 1 PLAYER1_WALLET_PUZZLE_HASH)
+            (sha256 1 PLAYER1_ORACLE_PUZZLE_HASH)
+            (sha256 1 PUBLIC_ORACLE_PUZZLE_HASH)
+            (sha256 1 MOD_HASH)
+        )
+    )
+    (defun-inline GetPuzzlePlayer1Joined ()
+        (puzzle-hash-of-curried-function MOD_HASH
+            (sha256 1 PuzzleHashPlayer1)
+            (sha256 1 CompromisePlayer1)
+            (sha256 1 PUBLIC_KEY_PLAYER1)
+            (sha256 1 PLAYER1_WALLET_PUZZLE_HASH)
+            (sha256 1 PLAYER1_ORACLE_PUZZLE_HASH)
+            (sha256 1 PUBLIC_ORACLE_PUZZLE_HASH)
+            (sha256 1 MOD_HASH)
+        )
+    )
+    (defun-inline GetPuzzlePlayer2Joined ()
+        (puzzle-hash-of-curried-function MOD_HASH
+            (sha256 1 Player2OraclePuzzleHash)
+            (sha256 1 PuzzleHashPlayer2)
+            (sha256 1 SelectionPlayer2)
+            (sha256 1 PublicKeyPlayer2)
+            (sha256 1 Player2WalletPuzzleHash)
+            (sha256 1 PuzzleHashPlayer1)
+            (sha256 1 CompromisePlayer1)
+            (sha256 1 PUBLIC_KEY_PLAYER1)
+            (sha256 1 PLAYER1_WALLET_PUZZLE_HASH)
+            (sha256 1 PLAYER1_ORACLE_PUZZLE_HASH)
+            (sha256 1 PUBLIC_ORACLE_PUZZLE_HASH)
+            (sha256 1 MOD_HASH)
+        )
+    )
+    (if (= Action 1)
+        (JoinPlayer1)
+        (if (= Action 2)
+            (JoinPlayer2)
+            (if (= Action 3)
+                (Close)
+                (if (= Action 4)
+                    (RevealPlayer1)
+                    (if (= Action 5)
+                        (ClaimPlayer2)
+                        (x "Invalid Action, Version 1.0.0")
+                    )
+                )
+            )
+        )
+    )
+)

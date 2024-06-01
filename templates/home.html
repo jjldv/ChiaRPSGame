@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chia Rock Paper & Scissors Game</title>
+    <link rel="icon" href="/static/images/logo_150x150.jpg" type="image/jpg">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/7.0.0/mdb.dark.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism.min.css" rel="stylesheet" />
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+
+</head>
+
+<body>
+    <header>
+        <nav class="navbar navbar-expand-lg ">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="/">
+                    <img src="/static/images/logo_150x150.jpg" height="20" alt="Chia RPS Game" loading="lazy" />
+                    Chia RPS Game
+                </a>
+                <button class="navbar-toggler" type="button" data-mdb-collapse-init data-mdb-target="#navbarNav"
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        <li class="nav-item ">
+                            <a class="nav-link" href="/openGames">Active Games</a>
+                        </li>
+                        <li class="nav-item ">
+                            <a class="nav-link" href="/historyGames">History Games</a>
+                        </li>
+                        <li class="nav-item ">
+                            <a class="nav-link" href="/leaderboard">Leaderboard</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">About</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="https://mintgarden.io/collections/amlitoverse-col1aspdzsk7hulkem4xqylpr5c3yufnuts95svlqxqnm9qfzwfpy8wq5drdca" target="_blank">AmlitoVerse NFT</a>
+                        </li>
+                        
+                    </ul>
+                </div>
+                <div class="dropdown">
+                    <a data-mdb-dropdown-init class="dropdown-toggle d-flex align-items-center hidden-arrow" href="#"
+                        id="navbarDropdownMenuAvatar" role="button" aria-expanded="false">
+                        <img src="/static/images/ProfilePictureNotLoged.jpg" id="ProfilePicture" class="rounded-circle" height="25"
+                             loading="lazy" />
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownMenuAvatar" id="UserUI">
+                        <li>
+                            <a class="dropdown-item"  
+                                data-mdb-target="#ModalChiaWalletConnect" id="BtnLogin">Login</a>
+                        </li>
+                       
+                    </ul>
+                </div>
+
+            </div>
+        </nav>
+
+    </header>
+    <main class="container mt-4">
+        <section id="inicio" class="text-center">
+            <h1>Welcome to the Chia Rock, Paper, Scissors Game</h1>
+        </section>
+    </main>
+
+    <script src="/static/js/libs/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/7.0.0/mdb.umd.min.js"></script>
+    <script src="https://unpkg.com/@walletconnect/sign-client@2.10.6/dist/index.umd.js"></script>
+    <script src="https://unpkg.com/@walletconnect/types@2.0.0-beta.55/dist/umd/index.min.js"></script>
+    <script src="https://unpkg.com/@walletconnect/utils@2.0.0-beta.55/dist/umd/index.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script src="/static/js/Utils.js"></script>
+    <script src="/static/js/ModalChiaWalletConnect.js"></script>
+    <script src="/static/js/ChiaWalletConnect.js"></script>
+    <script src="/static/js/Session.js"></script>
+    <script src="/static/js/home.js"></script>
+</body>
+
+</html>
