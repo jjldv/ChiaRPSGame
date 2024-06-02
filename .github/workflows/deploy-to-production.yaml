@@ -1,0 +1,14 @@
+name: Deploy to Production
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, production]
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Copy files to production
+      run: rsync -r --delete --exclude=.git ./ ${{ secrets.DEPLOY_FOLDER }}
