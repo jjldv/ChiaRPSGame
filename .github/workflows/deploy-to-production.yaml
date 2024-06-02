@@ -11,4 +11,4 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Copy files to production
-      run: rsync -r --delete --exclude=.git ./ ${{ secrets.DEPLOY_FOLDER }}
+      run: rsync -r --delete --exclude=.git --exclude=__pycache__ --exclude=RPSChialisp/__pycache__ ./ ${{ secrets.DEPLOY_FOLDER }}
