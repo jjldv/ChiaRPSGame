@@ -1400,7 +1400,7 @@ class RPSDriver:
         try:
             full_node_client = await FNClient.getClient()
             networkInfo = await full_node_client.fetch("get_network_info", {})
-            return {"success": True, "networkInfo": networkInfo}
+            return networkInfo
         except Exception as e:
             return {"success": False, "message": str(e)}
         finally:
