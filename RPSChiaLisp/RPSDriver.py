@@ -1420,7 +1420,16 @@ class RPSDriver:
         finally:
             walletClient.close()
             await walletClient.await_closed()
-
+    async def getBlockChainState(self):
+        try:
+            full_node_client = await FNClient.getClient()
+            blockchainState = await full_node_client.fetch("get_blockchain_state", {})
+            return blockchainState
+        except Exception as e:
+            return {"success": False, "message": str(e)}
+        finally:
+            full_node_client.close()
+            await full_node_client.await_closed()
     async def configNetwork(self):
         network_info_result = await self.getNetworkInfo()
         if network_info_result["success"]:

@@ -39,6 +39,23 @@ class Session {
             "sessionDisconnected",
             this.walletConnectSessionDisconnected.bind(this)
         );
+        Utils.getBlockChainState().then((State) => {
+            if(State.success && State.blockchain_state.sync.synced == true){
+                nodeStatus.innerHTML = "Synced";
+            }
+            else if(State.success && State.blockchain_state.sync.synced == false){
+                nodeStatus.innerHTML = "Syncing "+State.blockchain_state.sync.sync_progress_height+"/"+State.blockchain_state.sync.sync_tip_height;
+            }
+        });
+        setInterval(async () => {
+            let State = await Utils.getBlockChainState();
+            if(State.success && State.blockchain_state.sync.synced == true){
+                nodeStatus.innerHTML = "Synced";
+            }
+            else if(State.success && State.blockchain_state.sync.synced == false){
+                nodeStatus.innerHTML = "Syncing "+State.blockchain_state.sync.sync_progress_height+"/"+State.blockchain_state.sync.sync_tip_height;
+            }
+        }, 60000);
     }
     walletConnectSessionDisconnected() {
         this.connectWithWalletConnect();

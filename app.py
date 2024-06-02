@@ -336,6 +336,13 @@ async def closeGame(request: Request):
         return JSONResponse(content=response)
     except Exception as e:
         return JSONResponse(content={"success": False, "message": str(e)})
+@app.post("/getBlockChainState")
+async def getBlockChainState(request: Request):
+    try:
+        response = await Driver.getBlockChainState()
+        return JSONResponse(content=response)
+    except Exception as e:
+        return JSONResponse(content={"success": False, "message": str(e)})
 @app.post("/verifySignatureLogin")
 async def verifySignatureLogin(request: Request):
     try:

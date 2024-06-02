@@ -190,4 +190,12 @@ class Utils {
             return { success: false, message: "Error verifying signature" };
         }
     }
+    static async getBlockChainState() {
+        try {
+            const response = await Utils.fetch("/getBlockChainState");
+            return response;
+        } catch (error) {
+            return { success: false, message: "Error getting blockchain state" };
+        }
+    }
 }
