@@ -182,9 +182,9 @@ class Utils {
             return { success: false, message: "Error getting leaderboard" };
         }
     }
-    static async verifySignatureLogin(pubkey, signature, signingMode,address = null) {
+    static async verifySignatureLogin(pubkey,message, signature, signingMode,address = null) {
         try {
-            const response = await Utils.fetch("/verifySignatureLogin", { pubkey, signature, signingMode,address },true);
+            const response = await Utils.fetch("/verifySignatureLogin", { pubkey,message, signature, signingMode,address },true);
             return response;
         } catch (error) {
             return { success: false, message: "Error verifying signature" };

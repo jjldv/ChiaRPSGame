@@ -344,7 +344,8 @@ async def verifySignatureLogin(request: Request):
         pubkey = data['pubkey']
         signingMode = data['signingMode']
         address = data['address']
-        response = await Driver.verifySignatureLogin( pubkey,signature, signingMode, address)
+        message = data['message']
+        response = await Driver.verifySignatureLogin( pubkey,message,signature, signingMode, address)
         return JSONResponse(content=response)
     except Exception as e:
         return JSONResponse(content={"success": False, "message": str(e)})

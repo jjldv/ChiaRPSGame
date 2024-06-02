@@ -144,7 +144,7 @@ class ChiaWalletConnect extends EventTarget {
                 Utils.displayToast('Invalid output', 'error');
                 return;
             }
-            const isValidSignatureInfo = await Utils.verifySignatureLogin(parsedOutput.publicKey, parsedOutput.signature, parsedOutput.signingMode);
+            const isValidSignatureInfo = await Utils.verifySignatureLogin(parsedOutput.publicKey,this.loginMessage, parsedOutput.signature, parsedOutput.signingMode);
             if (isValidSignatureInfo.success == false || !isValidSignatureInfo.isValid) {
                 Utils.displayToast('Invalid signature', 'error');
                 return;
@@ -188,7 +188,7 @@ class ChiaWalletConnect extends EventTarget {
                 Utils.displayToast('Invalid output', 'error');
                 return;
             }
-            const isValidSignatureInfo = await Utils.verifySignatureLogin(pubkey, signature, signing_mode,address);
+            const isValidSignatureInfo = await Utils.verifySignatureLogin(pubkey,this.loginMessage, signature, signing_mode,address);
             if (isValidSignatureInfo.success == false || !isValidSignatureInfo.isValid) {
                 Utils.displayToast('Invalid signature', 'error');
                 return;

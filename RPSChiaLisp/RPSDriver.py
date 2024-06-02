@@ -1406,9 +1406,8 @@ class RPSDriver:
         finally:
             full_node_client.close()
             await full_node_client.await_closed()
-    async def verifySignatureLogin(self, publicKey:str, signature:str,signingMode:str,address:str):
+    async def verifySignatureLogin(self, publicKey:str,messageLogin:str, signature:str,signingMode:str,address:str):
         try:
-            messageLogin = "Login_RPS_" + datetime.datetime.now().strftime("%Y-%m-%d")
             walletClient = await WalletClient.getClient()
             if address == "" or address == None:
                 signatureInfo = await walletClient.fetch("verify_signature", {"signing_mode": signingMode, "pubkey": publicKey,"message": messageLogin,"signature": signature})

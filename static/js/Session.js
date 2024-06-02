@@ -206,7 +206,7 @@ class Session {
             );
             
             if (Response.success == true) {
-                const isValidSignatureInfo = await Utils.verifySignatureLogin(Response.pubkey, Response.signature, Response.signingMode,null);
+                const isValidSignatureInfo = await Utils.verifySignatureLogin(Response.pubkey,this.loginMessage, Response.signature, Response.signingMode,null);
                 if (isValidSignatureInfo.success == false || !isValidSignatureInfo.isValid) {
                     Utils.displayToast('Invalid signature', 'error');
                     return;
