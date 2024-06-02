@@ -1433,13 +1433,12 @@ class RPSDriver:
     async def configNetwork(self):
         network_info_result = await self.getNetworkInfo()
         if network_info_result["success"]:
-            network_info = network_info_result["networkInfo"]
-            self.CHIA_PREFIX = network_info["network_prefix"]
-            if network_info["network_name"] == "mainnet":
+            self.CHIA_PREFIX = network_info_result["network_prefix"]
+            if network_info_result["network_name"] == "mainnet":
                 self.GENESIS_CHALLENGE = bytes.fromhex("ccd5bb71183532bff220ba46c268991a3ff07eb358e8255a65c30a2dce0e5fbb")
                 self.GENESIS_CHALLENGE_HEX = self.GENESIS_CHALLENGE.hex()
                 self.IS_MAINNET = True
-            elif network_info["network_name"] == "testnet11":
+            elif network_info_result["network_name"] == "testnet11":
                 self.GENESIS_CHALLENGE = bytes.fromhex("37a90eb5185a9c4439a91ddc98bbadce7b4feba060d50116a067de66bf236615")
                 self.GENESIS_CHALLENGE_HEX = self.GENESIS_CHALLENGE.hex()
                 self.IS_MAINNET = False
