@@ -11,7 +11,6 @@
     <link rel="stylesheet" href="/static/css/styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism.min.css" rel="stylesheet" />
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-
 </head>
 
 <body>
@@ -41,33 +40,64 @@
                             <a class="nav-link" href="https://github.com/jjldv/ChiaRPSGame" target="_blank">Git</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="https://mintgarden.io/collections/amlitoverse-col1aspdzsk7hulkem4xqylpr5c3yufnuts95svlqxqnm9qfzwfpy8wq5drdca" target="_blank">AmlitoVerse NFT</a>
+                            <a class="nav-link"
+                                href="https://mintgarden.io/collections/amlitoverse-col1aspdzsk7hulkem4xqylpr5c3yufnuts95svlqxqnm9qfzwfpy8wq5drdca"
+                                target="_blank">AmlitoVerse NFT</a>
                         </li>
-                        
                     </ul>
                 </div>
                 <div class="dropdown">
                     <a data-mdb-dropdown-init class="dropdown-toggle d-flex align-items-center hidden-arrow" href="#"
                         id="navbarDropdownMenuAvatar" role="button" aria-expanded="false">
-                        <img src="/static/images/ProfilePictureNotLoged.jpg" id="ProfilePicture" class="rounded-circle" height="25"
-                             loading="lazy" />
+                        <img src="/static/images/ProfilePictureNotLoged.jpg" id="ProfilePicture" class="rounded-circle"
+                            height="25" loading="lazy" />
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownMenuAvatar" id="UserUI">
                         <li>
-                            <a class="dropdown-item"  
-                                data-mdb-target="#ModalChiaWalletConnect" id="BtnLogin">Login</a>
+                            <a class="dropdown-item" data-mdb-target="#ModalChiaWalletConnect" id="BtnLogin">Login</a>
                         </li>
-                       
                     </ul>
                 </div>
-
             </div>
         </nav>
-
     </header>
     <main class="container mt-4">
         <section id="inicio" class="text-center">
-            <h1>Welcome to the Chia Rock, Paper, Scissors Game</h1>
+            <h1 style="font-size: 2.5rem; font-weight: bold; margin-bottom: 20px;">Welcome to the Chia Rock, Paper,
+                Scissors Game</h1>
+            <h2 style="font-size: 2rem; font-weight: bold; margin-bottom: 20px;">How to Play</h2>
+            <p style="font-size: 1.25rem; margin-bottom: 30px;">Follow these steps to play the game:</p>
+            <ol class="list-group list-group-numbered" style="max-width: 700px; margin: 0 auto; text-align: left;">
+                <li class="list-group-item" style="background-color: #343a40; border: none; color: #ffffff;"><strong>Log
+                        in</strong>: Use the CLI, Wallet GUI, or WalletConnect to log in.</li>
+                <li class="list-group-item" style="background-color: #343a40; border: none; color: #ffffff;">
+                    <strong>Load Your Virtual Wallet</strong>: Before starting a game, you need to load money into your
+                    Game Wallet.</li>
+                <li class="list-group-item" style="background-color: #343a40; border: none; color: #ffffff;">
+                    <strong>Open a Game</strong>: Select the amount to bet and choose Rock, Paper, or Scissors.
+                    Additionally, provide a private key to hide your selection.</li>
+                <li class="list-group-item" style="background-color: #343a40; border: none; color: #ffffff;">
+                    <strong>Wait for an Opponent</strong>: The public and player oracles will point to your game, making
+                    it accessible to other players.</li>
+                <li class="list-group-item" style="background-color: #343a40; border: none; color: #ffffff;">
+                    <strong>Join a Game</strong>: If you find an open game, join by placing a matching bet and making
+                    your selection.</li>
+                <li class="list-group-item" style="background-color: #343a40; border: none; color: #ffffff;">
+                    <strong>Reveal Your Selection</strong>: If an opponent joins, you must reveal your choice using your
+                    private passphrase. If you do not reveal within 24 hours, the opponent can claim the total amount
+                    bet.</li>
+                <li class="list-group-item" style="background-color: #343a40; border: none; color: #ffffff;">
+                    <strong>Claim or Close the Game</strong>:
+                    <ul class="list-group" style="padding-left: 20px;">
+                        <li class="list-group-item" style="background-color: #343a40; border: none; color: #ffffff;">If
+                            the first player does not reveal their selection within 24 hours, the second player can
+                            claim the bet.</li>
+                        <li class="list-group-item" style="background-color: #343a40; border: none; color: #ffffff;">If
+                            no opponent joins within 24 hours, the first player can close the game and withdraw their
+                            bet.</li>
+                    </ul>
+                </li>
+            </ol>
         </section>
     </main>
 
