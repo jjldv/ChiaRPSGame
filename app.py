@@ -1,5 +1,5 @@
 import os
-from fastapi import Body, FastAPI, Request, HTTPException
+from fastapi import Body, FastAPI, Request, HTTPException, Response
 from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
@@ -28,6 +28,11 @@ async def startup_event():
     asyncio.create_task(syncHistoryGames())
 
 #VIews
+@app.get("/.well-known/walletconnect.txt")
+async def walletconnect(request: Request):
+    with open('.well-known/walletconnect.txt', 'r') as file:
+        content = file.read()
+    return Response(content=content, media_type="text/plain")
 @app.get("/")
 async def home(request: Request):
     return templates.TemplateResponse('home.html', {"request": request})
