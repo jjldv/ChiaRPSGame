@@ -929,6 +929,7 @@ class RPSDriver:
         try:
             Response = {}
             Response["publicKeyPlayer1"] = curriedParams[4]
+            Response["publicKeyPlayer2"] = "----"
             Response["compromisePlayer1"] = ""
             Response["puzzleHashPlayer1"] = ""
             Response["selectionPlayer2"] = "----"

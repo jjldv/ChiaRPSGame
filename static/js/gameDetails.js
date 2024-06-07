@@ -151,9 +151,9 @@ async function getGameDetails(showSpinner = false){
     coinHash = RgameInfo.coinRecord.coin.puzzle_hash;
     coinDate.innerHTML = RgameInfo.coinRecord.date;
     coinAmount.innerHTML = Utils.formatMojosPrefix(RgameInfo.coinRecord.coin.amount,IS_MAINNET);
-    puzzleHashPlayer1.innerHTML = RgameInfo.coinRecord.gameParams.puzzleHashPlayer1;
+    publicKeyPlayer1.innerHTML = `<a href="/userHistoryGames/${RgameInfo.coinRecord.gameParams.publicKeyPlayer1}">${RgameInfo.coinRecord.gameParams.publicKeyPlayer1}</a>`;
     compromisePlayer1.innerHTML = RgameInfo.coinRecord.gameParams.compromisePlayer1;
-    puzzleHashPlayer2.innerHTML = RgameInfo.coinRecord.gameParams.puzzleHashPlayer2;
+    publicKeyPlayer2.innerHTML = RgameInfo.coinRecord.gameParams.publicKeyPlayer2 !="----" ? `<a href="/userHistoryGames/${RgameInfo.coinRecord.gameParams.publicKeyPlayer2}">${RgameInfo.coinRecord.gameParams.publicKeyPlayer2}</a>` : RgameInfo.coinRecord.gameParams.publicKeyPlayer2;
     selectionPlayer2.innerHTML = RgameInfo.coinRecord.gameParams.emojiSelectionPlayer2;
     gamePuzzleReveal.innerHTML = RgameInfo.coinRecord.gamePuzzleReveal;
     gamePuzzleRevealDisassembled.innerHTML = RgameInfo.coinRecord.gamePuzzleRevealDisassembled;
