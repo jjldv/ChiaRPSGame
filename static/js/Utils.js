@@ -28,8 +28,12 @@ class Utils {
     static copyToClipboard(elementSelector) {
         const element = document.querySelector(elementSelector);
         const text = element.innerText;
+        const os = navigator.platform.toLowerCase();
+
+        // Aplicar reemplazo solo si es Windows
+        const processedText = os.includes('win') ? text.replace(/"/g, '\\"') : text;
         navigator.clipboard
-            .writeText(text)
+            .writeText(processedText)
             .then(() => {
                 this.displayToast("Copied to clipboard")
             })
