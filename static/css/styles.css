@@ -81,3 +81,7 @@
 .card-button:hover {
     background-color: #0056b3;
 }
+#DIDWalletConnect option{
+    background-color: #ffffff;
+    color: #000000;
+}

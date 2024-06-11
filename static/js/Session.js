@@ -1,5 +1,6 @@
 class Session {
     constructor() {
+        this.didsWallets = [];
         this.today = new Date().toISOString().slice(0, 10);
         this.profilePictureLoged = "/static/images/ProfilePictureLoged.jpg";
         this.profilePictureNotLoged =
@@ -26,6 +27,7 @@ class Session {
         }
         this.loginMessage = `Login_RPS_${this.today}`;
         this.QrContainerId = "qr-container";
+        //TODO: change chainId from getNetworkInfo
         this.walletConnect = new ChiaWalletConnect({
             relayUrl: "wss://relay.walletconnect.com",
             chainId: "chia:testnet",
@@ -60,7 +62,7 @@ class Session {
     walletConnectSessionDisconnected() {
         this.connectWithWalletConnect();
     }
-    walletConnectSessionConnected(e) {
+    async walletConnectSessionConnected(e) {
         const { session } = e.detail;
         const qrContainer = document.getElementById(this.QrContainerId);
         if (!qrContainer) return;
@@ -96,11 +98,48 @@ class Session {
         formGroup.id = "DIDWalletConnectFormGroup";
 
         qrContainer.appendChild(formGroup);
-        this.setContentWalletConnectLogin(true);
+        setTimeout(async () => {
+            this.setContentWalletConnectLogin(false,"Accessing DID Wallets... check your wallet to accept the petition.")
+            this.didsWallets = await this.getDidsWallets();
+            if (this.didsWallets.length == 0) {
+                this.setContentWalletConnectLogin(false, "No DID Wallets found.. please create one.");
+                return;
+            }
+            this.setContentWalletConnectLogin(true);
+
+        }, 500);
     }
     async disconnectWalletConnect() {
         await this.walletConnect.disconnect();
     }
+    async getDidsWallets() {
+        try {
+            const Response = await this.walletConnect.getWallets();
+            let didsWallets = Response.filter(item => item.type === 8 && JSON.parse(item.data));
+    
+            // Procesar las carteras usando Promise.all para manejar las promesas
+            didsWallets = await Promise.all(didsWallets.map(async (item) => {
+                item.data = JSON.parse(item.data);
+                let CoinId = await ChiaUtils.getCoinId(
+                    item.data.origin_coin.parent_coin_info,
+                    item.data.origin_coin.puzzle_hash,
+                    item.data.origin_coin.amount
+                );
+                let puzzleBytes = ChiaUtils.hexToBytes(CoinId.slice(2)); 
+                let DID =  ChiaUtils.encodePuzzleHash(puzzleBytes, "did:chia:");
+                item.DID = DID;
+                return item;
+            }));
+    
+            console.log(didsWallets);
+            return didsWallets;
+        } catch (error) {
+            console.error(error);
+            Utils.displayToast("Error getting DID Wallets");
+            return [];
+        }
+    }
+    
     setContentWalletConnectLogin(isLoginButton, message = "") {
         let formGroup = document.getElementById("DIDWalletConnectFormGroup");
         if (!formGroup) return;
@@ -108,24 +147,30 @@ class Session {
         if (isLoginButton) {
             const label = document.createElement("label");
             label.className = "customLabel";
-            label.textContent = "DID";
+            label.textContent = "Select a DID Wallet to login";
+            label.style.textAlign = "center";
 
-            const input = document.createElement("input");
-            input.type = "text";
-            input.placeholder = "did:chia:1ad...";
-            input.style.marginBottom = "10px";
-            input.className = "form-control";
-            input.id = "DIDWalletConnect";
+            const select = document.createElement("select");
+            select.style.marginBottom = "10px";
+            select.className = "form-control customInput";
+            select.id = "DIDWalletConnect";
+
+            this.didsWallets.forEach((didWallet) => {
+                const option = document.createElement("option");
+                option.value = didWallet.DID;
+                option.textContent = didWallet.name;
+                select.appendChild(option);
+            });
 
             formGroup.appendChild(label);
-            formGroup.appendChild(input);
+            formGroup.appendChild(select);
 
             const logInButton = document.createElement("button");
             logInButton.textContent = "Log In";
             logInButton.className = "btn btn-primary";
             logInButton.style.width = "100%";
             logInButton.addEventListener("click", () => {
-                UserSession.loginWithWalletConnect(input.value);
+                this.loginWithWalletConnect(select.value);
             });
             formGroup.appendChild(logInButton);
         }
@@ -217,7 +262,7 @@ class Session {
                 false,
                 "Waiting for response... Check your wallet."
             );
-            let Response = await this.walletConnect.chia_signMessageById(
+            let Response = await this.walletConnect.signMessageById(
                 this.loginMessage,
                 DID
             );

@@ -100,7 +100,9 @@ class RPSDriver:
         finally:
             full_node_client.close()
             await full_node_client.await_closed()
-    def calculateCoinId(self, parent_coin_info: str, puzzle_hash: str, amount: uint64):
+    async def calculateCoinId(self, parent_coin_info: str, puzzle_hash: str, amount: uint64):
+        parent_coin_info = parent_coin_info.replace("0x", "")
+        puzzle_hash = puzzle_hash.replace("0x", "")
         coin_id = std_hash(bytes32.fromhex(parent_coin_info) + bytes32.fromhex(puzzle_hash) + int_to_bytes(amount))
         return coin_id.hex()
     async def createSpendJoinPlayer1(self, pubKeyHex:str, coinId:str, fee:int, betAmount:int, selectionHash:str, cashOutAddressHash:str):
@@ -1431,6 +1433,13 @@ class RPSDriver:
         finally:
             full_node_client.close()
             await full_node_client.await_closed()
+    async def encodeDID(self, coinId:str):
+        try:
+            DID = encode_puzzle_hash(bytes.fromhex(coinId), "did:chia:")
+            return DID
+        except Exception as e:
+            return {"success": False, "message": str(e)}
+      
     async def configNetwork(self):
         network_info_result = await self.getNetworkInfo()
         if network_info_result["success"]:

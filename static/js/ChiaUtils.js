@@ -2,7 +2,7 @@ class ChiaUtils {
     static ONE_TRILLION = 1000000000000n;
     static M = 0x2bc830a3;
     static CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l";
-    
+
     static async getCoinId(parent_coin_info, puzzle_hash, amount) {
         amount = BigInt(amount);
         if (parent_coin_info.startsWith("0x")) {
@@ -83,7 +83,7 @@ class ChiaUtils {
         const maxAcc = (1 << (fromBits + toBits - 1)) - 1;
 
         for (const value of data) {
-            if (value < 0 || value >= (1 << fromBits)) {
+            if (value < 0 || value >= 1 << fromBits) {
                 throw new Error("Invalid Value");
             }
 
@@ -100,33 +100,13 @@ class ChiaUtils {
             if (bits > 0) {
                 result.push((acc << (toBits - bits)) & maxv);
             }
-        } else if (bits >= fromBits || ((acc << (toBits - bits)) & maxv) !== 0) {
+        } else if (bits >= fromBits) {
+            throw new Error("Invalid bits");
+        } else if (acc !== 0 && ((acc << (toBits - bits)) & maxv) !== 0) {
             throw new Error("Invalid bits");
         }
 
         return result;
-    }
-
-    static encodePuzzleHash(puzzleHash, prefix) {
-        const data = this.convertBits(puzzleHash, 8, 5);
-        const encoded = this.bech32Encode(prefix, data);
-        return encoded;
-    }
-
-    static bech32Encode(hrp, data) {
-        const combined = data.concat(this.bech32CreateChecksum(hrp, data));
-        return hrp + "1" + combined.map((d) => this.CHARSET[d]).join("");
-    }
-
-    static bech32CreateChecksum(hrp, data) {
-        const values = this.bech32HrpExpand(hrp).concat(data, [0, 0, 0, 0, 0, 0]);
-        const polymod = this.bech32Polymod(values) ^ this.M;
-        const result = [];
-        for (let i = 0; i < 6; i++) {
-            result.push(((polymod >> (5 * (5 - i))) & 31));
-        }
-        result.push(0);
-        return this.convertBits(result, 5, 8, false);
     }
 
     static bech32HrpExpand(hrp) {
@@ -142,15 +122,40 @@ class ChiaUtils {
     }
 
     static bech32Polymod(values) {
-        const generator = [0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3];
+        const generator = [
+            0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3,
+        ];
         let chk = 1;
         for (const value of values) {
             const top = chk >> 25;
-            chk = (chk & 0x1ffffff) << 5 ^ value;
+            chk = ((chk & 0x1ffffff) << 5) ^ value;
             for (let i = 0; i < 5; i++) {
                 chk ^= (top >> i) & 1 ? generator[i] : 0;
             }
         }
         return chk;
+    }
+
+    static bech32CreateChecksum(hrp, data) {
+        const values = this.bech32HrpExpand(hrp).concat(
+            data,
+            [0, 0, 0, 0, 0, 0]
+        );
+        const polymod = this.bech32Polymod(values) ^ this.M;
+        const result = [];
+        for (let i = 0; i < 6; i++) {
+            result.push((polymod >> (5 * (5 - i))) & 31);
+        }
+        return result;
+    }
+
+    static bech32Encode(hrp, data) {
+        const combined = data.concat(this.bech32CreateChecksum(hrp, data));
+        return hrp + "1" + combined.map((d) => this.CHARSET[d]).join("");
+    }
+
+    static encodePuzzleHash(puzzleHash, prefix) {
+        const data = this.convertBits(puzzleHash, 8, 5);
+        return this.bech32Encode(prefix, data);
     }
 }

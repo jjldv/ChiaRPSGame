@@ -55,13 +55,14 @@ class ChiaWalletConnect extends EventTarget {
         this.qrContainerId = "qr-container";
 
         this.init();
+        //TODO: change for url origin
         this.METADATA = WalletConnectTypes.Metadata = {
             name: "Chia Rock Paper & Scissors Game",
             description:
                 "Smart contract based Rock Paper & Scissors game on Chia blockchain",
-            url: "rps.capsulecode.mx",
+            url: "https://chiarps.mrdennis.dev/",
             icons: [
-                "https://rps.capsulecode.mx/static/images/logo_150x150.jpg",
+                "https://chiarps.mrdennis.dev/static/images/logo_150x150.jpg",
             ],
         };
         this.REQUIRED_NAMESPACES = ProposalTypes.RequiredNamespaces = {
@@ -98,6 +99,9 @@ class ChiaWalletConnect extends EventTarget {
         this.dispatchEvent(event);
     }
     openModal() {
+        if (document.getElementById("ModalChiaWalletConnect")) {
+            return;
+        }
         document.body.insertAdjacentHTML('beforeend', this.ModalChiaWalletConnect);
         var myModal = new mdb.Modal(document.getElementById("ModalChiaWalletConnect"), {
             keyboard: false
@@ -110,9 +114,11 @@ class ChiaWalletConnect extends EventTarget {
             SignMessageGUI.innerHTML = this.loginMessage;
             loginString.innerHTML = this.loginMessage;
         });
-        btnLoginGUI.addEventListener('click', async () => {
+        if (btnLoginGUI) {
+            btnLoginGUI.addEventListener('click', async () => {
             this.logInGUI();
-        });
+            });
+        }
         btnLoginCLI.addEventListener('click', async () => {
             this.logInCLI();
         });
@@ -284,7 +290,7 @@ class ChiaWalletConnect extends EventTarget {
 
         this.reset();
     }
-
+    //TODO: give the option to change the fingerprint from the GUI from this.accouts
     onSessionConnected(session) {
         const allNamespaceAccounts = Object.values(session.namespaces)
             .map((namespace) => namespace.accounts)
@@ -361,7 +367,7 @@ class ChiaWalletConnect extends EventTarget {
         return this.request("chia_logIn", params);
     }
 
-    async chia_signMessageById(message, id) {
+    async signMessageById(message, id) {
         if (!this.client) throw new Error("WalletConnect is not initialized");
         if (!this.session) throw new Error("Session is not connected");
         let is_hex = true;
@@ -369,5 +375,12 @@ class ChiaWalletConnect extends EventTarget {
         const params = { message, id , is_hex, safe_mode};
 
         return await this.request("chia_signMessageById", params);
+    }
+    async getWallets() {
+        if (!this.client) throw new Error("WalletConnect is not initialized");
+        if (!this.session) throw new Error("Session is not connected");
+        let includeData = true;
+        const params = { includeData };
+        return await this.request("chia_getWallets", params);
     }
 }
