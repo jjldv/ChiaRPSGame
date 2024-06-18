@@ -214,7 +214,6 @@ async function setFeeClaimGame(){
 async function setCmdMessageSignatureClaim(){
     didCmdMessageSingatureClaim.innerHTML = "";
     signatureSpendbundleClaim.value = "";
-    const walletAddressPuzzleHash = puzzleHashPlayer1.innerHTML;
     const concatMessage2Sign = await UserSession.concat([5,parseInt(Utils.XCHToMojos(parseFloat(feeSpendbundleClaim.value)))]);
     const sha256Message = await UserSession.sha256Hex(concatMessage2Sign);
     if (!sha256Message) {
