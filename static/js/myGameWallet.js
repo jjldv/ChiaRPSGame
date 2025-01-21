@@ -1,21 +1,26 @@
 let UserSession = new Session();
 IS_MAINNET = null;
-document.addEventListener("DOMContentLoaded", async function () {
-  
-
-    didCmdSingature.innerHTML = UserSession.DID;
-    playerDID.innerHTML = UserSession.DID;
-    walletAddress.innerHTML = UserSession.walletAddress;
-    walletPuzzleHash.innerHTML = UserSession.walletPuzzleHash;
-    walletPuzzleReveal.innerHTML = UserSession.walletPuzzleReveal;
-    walletPuzzleRevealDisassembled.innerHTML = UserSession.walletPuzzleRevealDisassembled;
+UserSession.on("connected", async () => {
+    gameWalletInfo = await UserSession.getWalletInfo();
+    walletAddress.innerHTML = gameWalletInfo.wallet_address;
     playerPubKey.innerHTML = UserSession.pubkey;
-    cashOutAddress.value = UserSession.cashOutAddress??"";
-    
+    walletPuzzleHash.innerHTML = gameWalletInfo.wallet_puzzle_hash;
+    walletPuzzleReveal.innerHTML = gameWalletInfo.wallet_puzzle_reveal;
+    walletPuzzleRevealDisassembled.innerHTML = gameWalletInfo.wallet_puzzle_reveal_disassembled;
+    cashOutAddress.value = UserSession.walletAddress;
     setInterval(async () => {
-        await getBalance();
+        await getBalance(gameWalletInfo.wallet_puzzle_hash);
         getPendingTransactions();
     }, 30000);
+    await getBalance(gameWalletInfo.wallet_puzzle_hash);
+    getPendingTransactions();
+
+
+    
+});
+document.addEventListener("DOMContentLoaded", async function () {
+  
+    
     
     coinIdSelect.addEventListener("change", async () => {
         if(coinIdSelect.value != ""){
@@ -29,8 +34,6 @@ document.addEventListener("DOMContentLoaded", async function () {
     feeSpendbundle.addEventListener("change", async () => {
         setCmdCashOutSignature()
     });
-    await getBalance();
-    getPendingTransactions();
     
 });
 async function setFeeCashOut(){
@@ -103,8 +106,8 @@ async function setCmdCashOutSignature(){
     didCmdMessageSingature.innerHTML = message;
     amountreceiveSpendbundle.innerHTML = Utils.formatMojosPrefix((coinIdSelect.options[coinIdSelect.selectedIndex].dataset.amount - Utils.XCHToMojos(feeSpendbundle.value)),IS_MAINNET)
 }
-async function getBalance() {
-    let walletBalanceInfo = await UserSession.getWalletBalance();
+async function getBalance(walletPuzzleHash) {
+    let walletBalanceInfo = await UserSession.getGameWalletBalance(walletPuzzleHash);
     if (walletBalanceInfo.success) {
         IS_MAINNET = walletBalanceInfo.isMainnet;
         walletBalance.innerHTML = Utils.formatMojosPrefix(walletBalanceInfo.balance,walletBalanceInfo.isMainnet);

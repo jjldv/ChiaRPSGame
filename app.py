@@ -72,7 +72,7 @@ async def getLeaderboard(request: Request):
 async def getUserOpenGames(request: Request):
     try:
         data = await request.json()  
-        pubkey = data['pubkey']
+        pubkey = data['pubkey'].replace("0x", "")
         response = await Driver.getUserOpenGames(pubkey)
         return JSONResponse(content=response)
     except Exception as e:
@@ -81,7 +81,7 @@ async def getUserOpenGames(request: Request):
 async def getUserHistoryGames(request: Request):
     try:
         data = await request.json()  
-        pubkey = data['pubkey']
+        pubkey = data['pubkey'].replace("0x", "")
         response = await Driver.getUserHistoryGames(pubkey)
         return JSONResponse(content=response)
     except Exception as e:
@@ -105,7 +105,7 @@ async def getOpenGames(request: Request):
 async def getWalletGameInfo(request: Request):
     try:
         data = await request.json()  
-        pubkey = data['pubkey']
+        pubkey = data['pubkey'].replace("0x", "")
         response = Driver.getWalletGameInfo(pubkey)
         return JSONResponse(content=response)
     except Exception as e:
@@ -126,7 +126,7 @@ async def cashOutCoin(request: Request):
         data = await request.json()  
         coinId = data['coinId']
         cashOutAddress = data['cashOutAddress']
-        pubkey = data['pubkey']
+        pubkey = data['pubkey'].replace("0x", "")
         signature = data['signature']
         fee = data['fee']
         response = await Driver.cashOutCoin(pubkey, coinId, cashOutAddress,signature, fee)
@@ -138,7 +138,7 @@ async def joinPlayer1(request: Request):
     try:
         data = await request.json()  
         coinId = data['coinId']
-        pubkey = data['pubkey']
+        pubkey = data['pubkey'].replace("0x", "")
         betAmount = data['betAmount']
         puzzleHashPlayer1 = data['puzzleHashPlayer1']
         compromisePlayer1 = data['compromisePlayer1']
@@ -179,7 +179,7 @@ async def concat(request: Request):
 async def getFeeEstimateCashOut(request: Request):
     try:
         data = await request.json()
-        pubkey = data['pubkey']
+        pubkey = data['pubkey'].replace("0x", "")
         coinId = data['coinId']
         response = await Driver.getFeeEstimateCashOut(pubkey, coinId)
         return JSONResponse(content=response)
@@ -189,7 +189,7 @@ async def getFeeEstimateCashOut(request: Request):
 async def getFeeEstimateJoinPlayer1(request: Request):
     try:
         data = await request.json()
-        pubkey = data['pubkey']
+        pubkey = data['pubkey'].replace("0x", "")
         coinId = data['coinId']
         response = await Driver.getFeeEstimateJoinPlayer1(pubkey, coinId)
         return JSONResponse(content=response)
@@ -199,7 +199,7 @@ async def getFeeEstimateJoinPlayer1(request: Request):
 async def getFeeEstimateJoinPlayer2(request: Request):
     try:
         data = await request.json()
-        pubkey = data['pubkey']
+        pubkey = data['pubkey'].replace("0x", "")
         coinId = data['coinId']
         coinIdWallet = data['coinIdWallet']
         response = await Driver.getFeeEstimateJoinPlayer2(pubkey, coinId,coinIdWallet)
@@ -210,7 +210,7 @@ async def getFeeEstimateJoinPlayer2(request: Request):
 async def joinPlayer2(request: Request):
     try:
         data = await request.json()
-        pubkey = data['pubkey']
+        pubkey = data['pubkey'].replace("0x", "")
         coinId = data['coinId']
         coinIdWallet = data['coinIdWallet']
         fee = data['fee']
@@ -264,7 +264,7 @@ async def revealSelectionPlayer1(request: Request):
         selection = data['selection']
         signature = data['signature']
         fee = data['fee']
-        pubKey = data['pubkey']
+        pubKey = data['pubkey'].replace("0x", "")
         revealKey = data["revealKey"]
         coinIdWallet = data["coinIdWallet"]
         signatureWallet = data["signatureWallet"]
@@ -283,7 +283,7 @@ async def revealSelectionPlayer1WithFee(request: Request):
         selection = data['selection']
         signature = data['signature']
         fee = data['fee']
-        pubKey = data['pubkey']
+        pubKey = data['pubkey'].replace("0x", "")
         revealKey = data["revealKey"]
         coinIdWallet = data["coinIdWallet"]
         signatureWallet = data["signatureWallet"]
@@ -297,7 +297,7 @@ async def getFeeEstimateRevealSelectionPlayer1(request: Request):
         data = await request.json()
         data = await request.json()
         coinId = data['coinId']
-        pubKey = data['pubkey']
+        pubKey = data['pubkey'].replace("0x", "")
         coinIdWallet = data["coinIdWallet"]
         key = data["key"]
         selection = data["selection"]
@@ -348,11 +348,34 @@ async def verifySignatureLogin(request: Request):
     try:
         data = await request.json()
         signature = data['signature']
-        pubkey = data['pubkey']
+        pubkey = data['pubkey'].replace("0x", "")
         signingMode = data['signingMode']
         address = data['address']
         message = data['message']
         response = await Driver.verifySignatureLogin( pubkey,message,signature, signingMode, address)
+        return JSONResponse(content=response)
+    except Exception as e:
+        return JSONResponse(content={"success": False, "message": str(e)})
+@app.post("/createSolutionJoinPlayer1")
+async def createSolutionJoinPlayer1(request: Request):
+    try:
+        data = await request.json()
+        puzzle_hash = data['puzzle_hash']
+        publicKeyPlayer1 = data['pubkey'].replace("0x", "")
+        amount = data['amount']
+        selectionHash = data['selectionHash']
+        cashOutAddressHash = data['cashOutAddressHash']
+        response = await Driver.createSolutionJoinPlayer1(publicKeyPlayer1,puzzle_hash,amount,selectionHash,cashOutAddressHash)
+        return JSONResponse(content=response)
+    except Exception as e:
+        return JSONResponse(content={"success": False, "message": str(e)})
+@app.post("/pushTx")
+async def pushTx(request: Request):
+    try:
+        data = await request.json()
+        spendBundleJson = data['tx']
+        spend_bundle = Driver.convertJsonToSpendBundle(spendBundleJson)
+        response = await Driver.pushTx(spend_bundle)
         return JSONResponse(content=response)
     except Exception as e:
         return JSONResponse(content={"success": False, "message": str(e)})

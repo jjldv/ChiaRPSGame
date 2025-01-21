@@ -356,7 +356,6 @@ class ChiaWalletConnect extends EventTarget {
         if (result.error) {
             throw new Error(result.error.message);
         }
-        console.log(result);
         return result.data;
     }
 

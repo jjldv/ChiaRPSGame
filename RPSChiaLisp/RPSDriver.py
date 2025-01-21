@@ -152,6 +152,39 @@ class RPSDriver:
         except Exception as e:
             print("Error creating spend open game", e)
             raise e 
+    async def createSolutionJoinPlayer1(self,publicKeyPlayer1:str,puzzle_hash:str,amount:int,selectionHash:str,cashOutAddressHash:str):
+        try:
+            PublicOracleMod = self.PUBLIC_ORACLE_MOD.curry(self.SERVER_GAME_PUBLIC_KEY,self.GAME_MOD.get_tree_hash())
+            PlayerOracleMod = self.PLAYER_ORACLE_MOD.curry(self.SERVER_GAME_PUBLIC_KEY,publicKeyPlayer1,self.GAME_MOD.get_tree_hash())
+            WalletPlayerMod = self.GAME_WALLET_MOD.curry(publicKeyPlayer1)
+            GamePlayerMod = self.GAME_MOD.curry(self.GAME_MOD.get_tree_hash(),PublicOracleMod.get_tree_hash(),PlayerOracleMod.get_tree_hash(), WalletPlayerMod.get_tree_hash(),publicKeyPlayer1)
+            targetHash = GamePlayerMod.get_tree_hash()
+            solution = Program.to([
+                self.ACTION_JOIN_PLAYER1,
+                puzzle_hash, 
+                amount,
+                0, 
+                targetHash, 
+                amount,
+                bytes.fromhex(selectionHash),
+                bytes.fromhex(cashOutAddressHash),
+                PlayerOracleMod.get_tree_hash()])
+            solutionOpenGame = Program.to([
+                    bytes.fromhex(selectionHash),
+                    bytes.fromhex(cashOutAddressHash),
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    amount,
+                    0])
+            return {"success": True, "message": "", "solutionGameWallet": SerializedProgram.from_program(solution).to_bytes().hex(),"solutionGame": SerializedProgram.from_program(solutionOpenGame).to_bytes().hex()}
+        except Exception as e:
+            return {"success": False, "message": str(e)}
     async def createSpendJoinPlayer2(self, publicKeyP2Hex:str, coinId:str,coinIdWallet:str, fee:int, selection:int, cashOutAddressHash:str):
         try:
 
@@ -1452,3 +1485,22 @@ class RPSDriver:
                 self.GENESIS_CHALLENGE = bytes.fromhex("37a90eb5185a9c4439a91ddc98bbadce7b4feba060d50116a067de66bf236615")
                 self.GENESIS_CHALLENGE_HEX = self.GENESIS_CHALLENGE.hex()
                 self.IS_MAINNET = False
+    def convertJsonToSpendBundle(self, jsonSpendBundle:dict):
+        try:
+            coin_spends = []
+            for coin_spend in jsonSpendBundle["coin_spends"]:
+                coin = Coin(
+                    bytes32.fromhex(coin_spend["coin"]["parent_coin_info"]),
+                    bytes32.fromhex(coin_spend["coin"]["puzzle_hash"]),
+                    uint64(coin_spend["coin"]["amount"])
+                )
+                puzzle_reveal = SerializedProgram.fromhex(coin_spend["puzzle_reveal"])
+                solution = SerializedProgram.fromhex(coin_spend["solution"])
+                coin_spends.append(CoinSpend(coin, puzzle_reveal, solution))
+
+            aggregated_signature = G2Element.from_bytes(bytes.fromhex(jsonSpendBundle["aggregated_signature"][0]))
+
+            spend_bundle = SpendBundle(coin_spends, aggregated_signature)
+            return spend_bundle
+        except Exception as e:
+            return SpendBundle([], G2Element())

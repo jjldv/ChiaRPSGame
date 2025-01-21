@@ -1,200 +1,98 @@
 class Session {
     constructor() {
-        this.didsWallets = [];
+        this.chiaWallet = window.chia;
+        this.ModalGobyWallet = ModalGobyWallet ?? "";
+        this.Goby;
+        this.pubkey = null;
+        this.walletAddress = null;
+        this.walletPuzzleHash = null;
+        this.network = null;
+        this.prefix = null;
         this.today = new Date().toISOString().slice(0, 10);
         this.profilePictureLoged = "/static/images/ProfilePictureLoged.jpg";
-        this.profilePictureNotLoged =
-            "/static/images/ProfilePictureNotLoged.jpg";
-        this.DID = localStorage.getItem("DID");
-        this.pubkey = localStorage.getItem("pubkey");
-        this.fingerprint = localStorage.getItem("fingerprint");
-        this.address = localStorage.getItem("address");
-        this.walletAddress = localStorage.getItem("walletAddress");
-        this.walletPuzzleHash = localStorage.getItem("walletPuzzleHash");
-        this.genesisChallenge = localStorage.getItem("genesisChallenge");
-        this.walletPuzzleReveal = localStorage.getItem("walletPuzzleReveal");
-        this.walletPuzzleRevealDisassembled = localStorage.getItem("walletPuzzleRevealDisassembled");
-        this.gamePuzzleHash = localStorage.getItem("gamePuzzleHash");
-        this.cashOutAddress = localStorage.getItem("cashOutAddress");
-        this.gamePuzzleReveal = localStorage.getItem("gamePuzzleReveal");
-        this.gamePuzzleRevealDisassembled = localStorage.getItem("gamePuzzleRevealDisassembled");
-        this.oraclePuzzleHash = localStorage.getItem("oraclePuzzleHash");
-        if (this.DID) {
-            this.setUserSessionUI(true);
-        }
-        else {
-            this.setUserSessionUI(false);
-        }
-        this.loginMessage = `Login_RPS_${this.today}`;
-        this.QrContainerId = "qr-container";
-        //TODO: change chainId from getNetworkInfo
-        this.walletConnect = new ChiaWalletConnect({
-            relayUrl: "wss://relay.walletconnect.com",
-            chainId: "chia:testnet",
-            projectId: "b9b6a9774dc1ad59b8f18baf7dfc37e6",
-        });
-        this.walletConnect.addEventListener(
-            "sessionConnected",
-            this.walletConnectSessionConnected.bind(this)
-        );
-        this.walletConnect.addEventListener(
-            "sessionDisconnected",
-            this.walletConnectSessionDisconnected.bind(this)
-        );
-        Utils.getBlockChainState().then((State) => {
-            if(State.success && State.blockchain_state.sync.synced == true){
-                nodeStatus.innerHTML = "Synced";
-            }
-            else if(State.success && State.blockchain_state.sync.synced == false){
-                nodeStatus.innerHTML = "Syncing "+State.blockchain_state.sync.sync_progress_height+"/"+State.blockchain_state.sync.sync_tip_height;
-            }
-        });
-        setInterval(async () => {
-            let State = await Utils.getBlockChainState();
-            if(State.success && State.blockchain_state.sync.synced == true){
-                nodeStatus.innerHTML = "Synced";
-            }
-            else if(State.success && State.blockchain_state.sync.synced == false){
-                nodeStatus.innerHTML = "Syncing "+State.blockchain_state.sync.sync_progress_height+"/"+State.blockchain_state.sync.sync_tip_height;
-            }
-        }, 60000);
+        this.profilePictureNotLoged ="/static/images/ProfilePictureNotLoged.jpg";
+        this.setUserSessionUI(false);
+        this.initAsync();
+        this.eventListeners = {};
+        this.startPeriodicUpdate(document.getElementById("nodeStatus"));
     }
-    walletConnectSessionDisconnected() {
-        this.connectWithWalletConnect();
-    }
-    async walletConnectSessionConnected(e) {
-        const { session } = e.detail;
-        const qrContainer = document.getElementById(this.QrContainerId);
-        if (!qrContainer) return;
-        qrContainer.innerHTML = "";
-
-        const onlineMessage = document.createElement("p");
-        onlineMessage.textContent = "WalletConnect Online";
-        onlineMessage.className = "customLabel";
-        onlineMessage.style.textAlign = "center";
-        qrContainer.appendChild(onlineMessage);
-
-        const walletConnectLogo = document.createElement("img");
-        walletConnectLogo.src = "/static/images/WalletConnectLogo.png";
-        walletConnectLogo.style.display = "block";
-        walletConnectLogo.style.marginLeft = "auto";
-        walletConnectLogo.style.marginRight = "auto";
-        walletConnectLogo.style.marginBottom = "10px";
-        qrContainer.appendChild(walletConnectLogo);
-
-        const disconnectButton = document.createElement("button");
-        disconnectButton.textContent = "Disconnect";
-        disconnectButton.className = "btn btn-warning";
-        disconnectButton.style.width = "100%";
-        disconnectButton.style.marginBottom = "10px";
-        disconnectButton.addEventListener(
-            "click",
-            this.disconnectWalletConnect.bind(this)
-        );
-        qrContainer.insertBefore(disconnectButton, qrContainer.firstChild);
-
-        const formGroup = document.createElement("div");
-        formGroup.className = "form-group";
-        formGroup.id = "DIDWalletConnectFormGroup";
-
-        qrContainer.appendChild(formGroup);
-        setTimeout(async () => {
-            this.setContentWalletConnectLogin(false,"Accessing DID Wallets... check your wallet to accept the petition.")
-            this.didsWallets = await this.getDidsWallets();
-            if (this.didsWallets.length == 0) {
-                this.setContentWalletConnectLogin(false, "No DID Wallets found.. please create one.");
+    async initAsync() {
+        try {
+            const isConnected = await this.IsGobyConnected();
+            if (!isConnected) {
                 return;
             }
-            this.setContentWalletConnectLogin(true);
-
-        }, 500);
-    }
-    async disconnectWalletConnect() {
-        await this.walletConnect.disconnect();
-    }
-    async getDidsWallets() {
-        try {
-            const Response = await this.walletConnect.getWallets();
-            let didsWallets = Response.filter(item => item.type === 8 && JSON.parse(item.data));
-    
-            // Procesar las carteras usando Promise.all para manejar las promesas
-            didsWallets = await Promise.all(didsWallets.map(async (item) => {
-                item.data = JSON.parse(item.data);
-                let CoinId = await ChiaUtils.getCoinId(
-                    item.data.origin_coin.parent_coin_info,
-                    item.data.origin_coin.puzzle_hash,
-                    item.data.origin_coin.amount
-                );
-                let puzzleBytes = ChiaUtils.hexToBytes(CoinId.slice(2)); 
-                let DID =  ChiaUtils.encodePuzzleHash(puzzleBytes, "did:chia:");
-                item.DID = DID;
-                return item;
-            }));
-    
-            console.log(didsWallets);
-            return didsWallets;
+            this.setUserSessionUI(true);
+            this.Goby = new Goby();
+            this.Goby.initialize();
+            this.chiaWallet.on("accountChanged", () => {
+                window.location.reload();
+            });
+            this.emit('connected');
         } catch (error) {
-            console.error(error);
-            Utils.displayToast("Error getting DID Wallets");
-            return [];
+            console.error("Error initializing Goby connection:", error);
         }
     }
-    
-    setContentWalletConnectLogin(isLoginButton, message = "") {
-        let formGroup = document.getElementById("DIDWalletConnectFormGroup");
-        if (!formGroup) return;
-        formGroup.innerHTML = "";
-        if (isLoginButton) {
-            const label = document.createElement("label");
-            label.className = "customLabel";
-            label.textContent = "Select a DID Wallet to login";
-            label.style.textAlign = "center";
-
-            const select = document.createElement("select");
-            select.style.marginBottom = "10px";
-            select.className = "form-control customInput";
-            select.id = "DIDWalletConnect";
-
-            this.didsWallets.forEach((didWallet) => {
-                const option = document.createElement("option");
-                option.value = didWallet.DID;
-                option.textContent = didWallet.name;
-                select.appendChild(option);
-            });
-
-            formGroup.appendChild(label);
-            formGroup.appendChild(select);
-
-            const logInButton = document.createElement("button");
-            logInButton.textContent = "Log In";
-            logInButton.className = "btn btn-primary";
-            logInButton.style.width = "100%";
-            logInButton.addEventListener("click", () => {
-                this.loginWithWalletConnect(select.value);
-            });
-            formGroup.appendChild(logInButton);
+    on(eventName, callback) {
+        if (!this.eventListeners[eventName]) {
+            this.eventListeners[eventName] = [];
         }
-        if (message) {
-            const messageElement = document.createElement("p");
-            messageElement.textContent = message;
-            messageElement.style.textAlign = "center";
-            messageElement.style.marginTop = "10px";
-            messageElement.className = "alert alert-success";
-            formGroup.appendChild(messageElement);
+        this.eventListeners[eventName].push(callback);
+    }
+
+    // Nuevo: Método para emitir eventos
+    emit(eventName, ...args) {
+        const listeners = this.eventListeners[eventName];
+        if (listeners) {
+            listeners.forEach(listener => listener(...args));
         }
     }
-    setUserSession(DID, pubkey, fingerprint = null, address = null) {
-        this.DID = DID;
-        this.pubkey = pubkey;
-        this.address = address;
-        this.fingerprint = fingerprint;
-        localStorage.setItem("DID", DID);
-        localStorage.setItem("pubkey", pubkey);
-        localStorage.setItem("fingerprint", fingerprint);
-        localStorage.setItem("address", address);
-        this.getWalletInfo();
+    async IsGobyConnected() {
+        try {
+            if (Boolean(this.chiaWallet && this.chiaWallet.isGoby) == false)
+                return false;
+            await this.chiaWallet.request({
+                method: "connect",
+                params: { eager: true },
+            });
 
-        this.setUserSessionUI();
+            await this.setUserSession();
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    async setUserSession() {
+        try {
+            const [network, publicKeys, accounts] = await Promise.all([
+                this.chiaWallet.request({ method: "chainId" }),
+                this.chiaWallet.request({ method: "getPublicKeys" }),
+                this.chiaWallet.request({ method: "accounts" }),
+            ]);
+
+            const prefix = network === "mainnet" ? "xch" : "txch";
+            const walletAddress = greenweb.util.address.puzzleHashToAddress(
+                accounts[0],
+                prefix
+            );
+
+            Object.assign(this, {
+                pubkey: publicKeys[0],
+                walletAddress,
+                walletPuzzleHash: accounts[0],
+                network,
+                prefix,
+            });
+
+            this.setUserSessionUI();
+
+            const reloadPage = () => window.location.reload();
+            this.chiaWallet.on("accountChanged", reloadPage);
+            this.chiaWallet.on("chainChanged", reloadPage);
+        } catch (error) {
+            console.error("Error setting user session:", error);
+        }
     }
     setUserSessionUI(isLoged = true) {
         let profilePicture = document.getElementById("ProfilePicture");
@@ -207,105 +105,66 @@ class Session {
                 <li><a class="dropdown-item" href="/createGame">Create Game</a></li>
                 <li><a class="dropdown-item" href="/userOpenGames/${this.pubkey}">My Open Games</a></li>
                 <li><a class="dropdown-item" href="/userHistoryGames/${this.pubkey}">My History Games</a></li>
-                <li><a class="dropdown-item" id="signOut">Sign Out</a></li>
             `;
-            document.getElementById("signOut").addEventListener("click", () => {
-                this.logout();
-            });
         } else {
             profilePicture.src = this.profilePictureNotLoged;
             userUI.innerHTML = `
                 <li><a class="dropdown-item" id="BtnLogin" >Login</a></li>
             `;
-            document.getElementById("BtnLogin").addEventListener("click", () => {
-                this.connectWithWalletConnect();
-            });
+            document
+                .getElementById("BtnLogin")
+                .addEventListener("click", () => {
+                    this.loginWithGobyWallet();
+                });
         }
     }
-    async logout() {
-        localStorage.removeItem("DID");
-        localStorage.removeItem("pubkey");
-        localStorage.removeItem("fingerprint");
-        localStorage.removeItem("address");
-        localStorage.removeItem("walletAddress");
-        localStorage.removeItem("walletPuzzleHash");
-        localStorage.removeItem("genesisChallenge");
-        localStorage.removeItem("walletPuzzleReveal");
-        localStorage.removeItem("walletPuzzleRevealDisassembled");
-        localStorage.removeItem("cashOutAddress");
-        localStorage.removeItem("gamePuzzleHash");
-        localStorage.removeItem("gamePuzzleReveal");
-        localStorage.removeItem("gamePuzzleRevealDisassembled");
-        localStorage.removeItem("oraclePuzzleHash");
-        this.DID = null;
-        this.pubkey = null;
-        this.fingerprint = null;
-        this.address = null;
-        this.walletAddress = null;
-        this.walletPuzzleHash = null;
-        this.genesisChallenge = null;
-        this.walletPuzzleReveal = null;
-        this.walletPuzzleRevealDisassembled = null;
-        this.cashOutAddress = null;
-        this.gamePuzzleHash = null;
-        this.gamePuzzleReveal = null;
-        this.gamePuzzleRevealDisassembled = null;
-        this.oraclePuzzleHash = null;
-        if (this.isWalletConnectConnected()) {
-            await this.disconnectWalletConnect();
+    
+    async loginWithGobyWallet() {
+        if (Boolean(this.chiaWallet && this.chiaWallet.isGoby) == false) {
+            this.openModalGobyWallet();
+            return;
         }
-        location.href = "/";
-    }
-    async loginWithWalletConnect(DID) {
         try {
-            this.setContentWalletConnectLogin(
-                false,
-                "Waiting for response... Check your wallet."
+            let connect = await window.chia.request({ method: "connect" });
+            await this.chiaWallet.request({
+                method: "connect",
+                params: { eager: true },
+            });
+            const network = await this.chiaWallet.request({
+                method: "chainId",
+            });
+            const publicKeys = await this.chiaWallet.request({
+                method: "getPublicKeys",
+            });
+            const accounts = await this.chiaWallet.request({
+                method: "accounts",
+            });
+            const prefix = network == "mainnet" ? "xch" : "txch";
+            const address = greenweb.util.address.puzzleHashToAddress(
+                accounts[0],
+                prefix
             );
-            let Response = await this.walletConnect.signMessageById(
-                this.loginMessage,
-                DID
-            );
-            
-            if (Response.success == true) {
-                const isValidSignatureInfo = await Utils.verifySignatureLogin(Response.pubkey,this.loginMessage, Response.signature, Response.signingMode,null);
-                if (isValidSignatureInfo.success == false || !isValidSignatureInfo.isValid) {
-                    Utils.displayToast('Invalid signature', 'error');
-                    return;
-                }
-                Utils.displayToast('Signature verified', 'success');
-                var modalInstance = mdb.Modal.getInstance(
-                    document.getElementById("ModalChiaWalletConnect")
-                );
-                modalInstance.hide();
-                this.setUserSession(
-                    DID,
-                    Response.pubkey,
-                    this.walletConnect.fingerprint
-                );
-                return;
-            }
-            this.setContentWalletConnectLogin(
-                true,
-                `Error logging in. Try again`
-            );
-            console.log(Response);
-        } catch (e) {
-            this.setContentWalletConnectLogin(
-                true,
-                "Error logging in. Try again"
-            );
-            console.error(e);
+            await this.setUserSession();
+        } catch (err) {
+            console.error(err);
         }
     }
-    connectWithWalletConnect() {
-        this.walletConnect.connect(null, this.QrContainerId);
-    }
-    isWalletConnectConnected() {
-        return (
-            this.walletConnect.session !== undefined &&
-            this.walletConnect.session !== null
+    openModalGobyWallet() {
+        if (document.getElementById("ModalGobyWallet")) {
+            return;
+        }
+        document.body.insertAdjacentHTML("beforeend", this.ModalGobyWallet);
+        var myModal = new mdb.Modal(
+            document.getElementById("ModalGobyWallet"),
+            {
+                keyboard: false,
+            }
         );
+        let modalElement = document.getElementById("ModalGobyWallet");
+        modalElement.addEventListener("hidden.mdb.modal", function () {
+            modalElement.remove();
+        });
+        myModal.show();
     }
     async getWalletInfo() {
         try {
@@ -318,8 +177,6 @@ class Session {
             });
             const JsonResponse = await response.json();
             if (JsonResponse.success) {
-                this.walletAddress = JsonResponse.wallet_address;
-                this.walletPuzzleHash = JsonResponse.wallet_puzzle_hash;
                 this.genesisChallenge = JsonResponse.genesis_challenge;
                 this.walletPuzzleReveal = JsonResponse.wallet_puzzle_reveal;
                 this.walletPuzzleRevealDisassembled = JsonResponse.wallet_puzzle_reveal_disassembled;
@@ -327,35 +184,80 @@ class Session {
                 this.gamePuzzleReveal = JsonResponse.game_puzzle_reveal;
                 this.gamePuzzleRevealDisassembled = JsonResponse.game_puzzle_reveal_disassembled;
                 this.oraclePuzzleHash = JsonResponse.oracle_puzzle_hash;
-                localStorage.setItem("walletAddress", this.walletAddress);
-                localStorage.setItem("walletPuzzleHash", this.walletPuzzleHash);
-                localStorage.setItem("genesisChallenge", this.genesisChallenge);
-                localStorage.setItem("walletPuzzleReveal", this.walletPuzzleReveal);
-                localStorage.setItem("walletPuzzleRevealDisassembled", this.walletPuzzleRevealDisassembled);
-                localStorage.setItem("gamePuzzleHash", this.gamePuzzleHash);
-                localStorage.setItem("gamePuzzleReveal", this.gamePuzzleReveal);
-                localStorage.setItem("gamePuzzleRevealDisassembled", this.gamePuzzleRevealDisassembled);
-                localStorage.setItem("oraclePuzzleHash", this.oraclePuzzleHash);
             }
+            return JsonResponse;
         } catch (error) {
             console.error(error);
+            return { success: false, message: "Error getting wallet info" };
         }
     }
-    async getWalletBalance() {
+    async createSolutionJoinPlayer1(puzzle_hash,amount,selectionHash,cashOutAddressHash){
+        try {
+            const response = await fetch("/createSolutionJoinPlayer1", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ pubkey: this.pubkey, puzzle_hash: puzzle_hash, amount: amount, selectionHash: selectionHash, cashOutAddressHash: cashOutAddressHash }),
+            });
+            const JsonResponse = await response.json();
+            return JsonResponse;
+        } catch (error) {
+            console.error(error);
+            return { success: false, message: "Error creating solution" };
+        }
+    }
+    async pushTx(tx) {
+        try {
+            const response = await fetch("/pushTx", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ tx: tx }),
+            });
+            const JsonResponse = await response.json();
+            return JsonResponse;
+        } catch (error) {
+            console.error(error);
+            return { success: false, message: "Error pushing transaction" };
+        }
+    }
+    async getGameWalletBalance(walletPuzzleHash) {
         try {
             const response = await fetch("/getWalletBalance", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({
-                    walletPuzzleHash: this.walletPuzzleHash,
-                }),
+                body: JSON.stringify({ walletPuzzleHash: walletPuzzleHash }),
             });
             const JsonResponse = await response.json();
+
             return JsonResponse;
         } catch (error) {
             console.error(error);
+            return { success: false, message: "Error getting wallet info" };
+        }
+    }
+    async getWalletBalance() {
+        try {
+            const response = await this.chiaWallet.request({
+                method: 'getAssetBalance',
+                params: {
+                    type: null,  
+                    assetId: null  
+                }
+            });
+
+            return {
+                confirmed: response.confirmed,
+                spendable: response.spendable,
+                spendableCoinCount: response.spendableCoinCount
+            };
+        } catch (error) {
+            console.error('Error getting wallet balance:', error);
+            throw error;
         }
     }
     async chargeWallet() {
@@ -407,14 +309,15 @@ class Session {
     async setCashOutAddress(address) {
         try {
             this.cashOutAddress = address;
-            localStorage.setItem("cashOutAddress", this.cashOutAddress);
         } catch (error) {
             console.error(error);
         }
     }
     async getFeeEstimateCloseGame(coinId) {
         try {
-            const response = await Utils.fetch("/getFeeEstimateCloseGame", {coinId});
+            const response = await Utils.fetch("/getFeeEstimateCloseGame", {
+                coinId,
+            });
             if (response.success) {
                 return response.infoFee.estimates[0];
             }
@@ -428,13 +331,12 @@ class Session {
         try {
             const response = await Utils.fetch("/getFeeEstimateCashOut", {
                 coinId: coinId,
-                pubkey: this.pubkey
+                pubkey: this.pubkey,
             });
             if (response.success) {
                 return response.infoFee.estimates[0];
             }
             return 0;
-            
         } catch (error) {
             return 0;
             Utils.displayToast("Error getting fee estimate");
@@ -449,7 +351,7 @@ class Session {
                 },
                 body: JSON.stringify({
                     coinId: coinId,
-                    pubkey: this.pubkey
+                    pubkey: this.pubkey,
                 }),
             });
             const JsonResponse = await response.json();
@@ -466,13 +368,13 @@ class Session {
             console.error(error);
         }
     }
-    async getFeeEstimateJoinPlayer2(coinId,coindIdWallet) {
+    async getFeeEstimateJoinPlayer2(coinId, coindIdWallet) {
         try {
             const response = await Utils.fetch("/getFeeEstimateJoinPlayer2", {
                 coinId: coinId,
                 pubkey: this.pubkey,
-                coinIdWallet: coindIdWallet
-            })
+                coinIdWallet: coindIdWallet,
+            });
             if (response.success) {
                 return response.infoFee.estimates[0];
             }
@@ -481,15 +383,23 @@ class Session {
             return 0;
         }
     }
-    async getFeeEstimateRevealSelectionPlayer1(coinId,coinIdWallet,selection,key) {
+    async getFeeEstimateRevealSelectionPlayer1(
+        coinId,
+        coinIdWallet,
+        selection,
+        key
+    ) {
         try {
-            const response = await Utils.fetch("/getFeeEstimateRevealSelectionPlayer1", {
-                coinId: coinId,
-                pubkey: this.pubkey,
-                coinIdWallet: coinIdWallet,
-                selection: selection,
-                key: key
-            })
+            const response = await Utils.fetch(
+                "/getFeeEstimateRevealSelectionPlayer1",
+                {
+                    coinId: coinId,
+                    pubkey: this.pubkey,
+                    coinIdWallet: coinIdWallet,
+                    selection: selection,
+                    key: key,
+                }
+            );
             if (response.success) {
                 return response.infoFee.estimates[0];
             }
@@ -500,109 +410,97 @@ class Session {
     }
     async closeGame(coinId, fee, signature) {
         try {
-            const response = await Utils.fetch("/closeGame", {
-                coinId: coinId,
-                pubkey: this.pubkey,
-                fee: parseInt(fee),
-                signature: signature,
-            },true);
+            const response = await Utils.fetch(
+                "/closeGame",
+                {
+                    coinId: coinId,
+                    pubkey: this.pubkey,
+                    fee: parseInt(fee),
+                    signature: signature,
+                },
+                true
+            );
             return response;
         } catch (error) {
             return { success: false, message: "Error closing game" };
             console.error(error);
         }
     }
-    async joinPlayer1(coinId, fee, betAmount,compromisePlayer1,puzzleHashPlayer1, signature) {
+    async joinPlayer1(coinId,fee,betAmount,compromisePlayer1,puzzleHashPlayer1,signature) {
         try {
-            const response = await Utils.fetch("/joinPlayer1", {
-                coinId: coinId,
-                pubkey: this.pubkey,
-                fee: fee,
-                compromisePlayer1: compromisePlayer1,
-                puzzleHashPlayer1: puzzleHashPlayer1,
-                signature: signature,
-                betAmount: parseInt(betAmount),
-            },true);
-           return response;
-        } catch (error) {
-            return { success: false, message: "Error opening game" };
-        }
-    }
-    async joinPlayer2(coinId,coinIdWallet, fee,selection,puzzleHashPlayer2, signature) {
-        try {
-            const response = await Utils.fetch("/joinPlayer2", {
-                coinId: coinId,
-                coinIdWallet: coinIdWallet,
-                pubkey: this.pubkey,
-                fee: fee,
-                selection: parseInt(selection),
-                puzzleHashPlayer2: puzzleHashPlayer2,
-                signature: signature,
-            },true);
+            const response = await Utils.fetch(
+                "/joinPlayer1",
+                {
+                    coinId: coinId,
+                    pubkey: this.pubkey,
+                    fee: fee,
+                    compromisePlayer1: compromisePlayer1,
+                    puzzleHashPlayer1: puzzleHashPlayer1,
+                    signature: signature,
+                    betAmount: parseInt(betAmount),
+                },
+                true
+            );
             return response;
         } catch (error) {
             return { success: false, message: "Error opening game" };
         }
     }
-    async cashOut(coinId, walletAddress,signature,fee) {
+    async joinPlayer2(coinId,coinIdWallet,fee,selection,puzzleHashPlayer2,signature) {
         try {
-            const response = await Utils.fetch("/cashOutCoin", {
-                coinId: coinId,
-                cashOutAddress: walletAddress,
-                pubkey: this.pubkey,
-                signature: signature,
-                fee: fee,
-            },true);
+            const response = await Utils.fetch(
+                "/joinPlayer2",
+                {
+                    coinId: coinId,
+                    coinIdWallet: coinIdWallet,
+                    pubkey: this.pubkey,
+                    fee: fee,
+                    selection: parseInt(selection),
+                    puzzleHashPlayer2: puzzleHashPlayer2,
+                    signature: signature,
+                },
+                true
+            );
+            return response;
+        } catch (error) {
+            return { success: false, message: "Error opening game" };
+        }
+    }
+    async cashOut(coinId, walletAddress, signature, fee) {
+        try {
+            const response = await Utils.fetch(
+                "/cashOutCoin",
+                {
+                    coinId: coinId,
+                    cashOutAddress: walletAddress,
+                    pubkey: this.pubkey,
+                    signature: signature,
+                    fee: fee,
+                },
+                true
+            );
             return response;
         } catch (error) {
             return { success: false, message: "Error cashing out" };
             Utils.displayToast("Error cashing out");
         }
     }
-    displayWalletAddressMessage() {
-        const formGroup = document.createElement("div");
-        formGroup.className = "modal";
-        formGroup.id = "walletAddressModal";
-        formGroup.innerHTML = `
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Send any amount to</h5>
-                        <button type="button" class="btn-close" data-mdb-ripple-init data-mdb-dismiss="modal"
-        aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body" style="color:white;">
-                        <p id="WalletAddressModal">${this.walletAddress}</p>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-primary" onclick="Utils.copyToClipboard('#WalletAddressModal');">Copy Address</button>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        document.body.appendChild(formGroup);
-        const walletAddressModal = new mdb.Modal(
-            document.getElementById("walletAddressModal")
-        );
-        walletAddressModal.show();
-        const modalElement = document.getElementById("walletAddressModal");
-        modalElement.addEventListener("hidden.bs.modal", function () {
-            document.body.removeChild(modalElement);
-        });
-    }
-    async revealSelectionPlayer1(coinId,selection,revealKey,signature,coinIdWallet="",fee="",signatureWallet="") {
+    async revealSelectionPlayer1(coinId,selection,revealKey,signature,coinIdWallet = "",fee = "",signatureWallet = "") {
         try {
-            const response = await Utils.fetch("/revealSelectionPlayer1", {
-                coinId: coinId,
-                pubkey: this.pubkey,
-                selection: parseInt(selection),
-                revealKey: revealKey,
-                signature: signature,
-                coinIdWallet: coinIdWallet,
-                fee: fee,
-                signatureWallet: signatureWallet
-            },true);
+            const response = await Utils.fetch(
+                "/revealSelectionPlayer1",
+                {
+                    coinId: coinId,
+                    pubkey: this.pubkey,
+                    selection: parseInt(selection),
+                    revealKey: revealKey,
+                    signature: signature,
+                    coinIdWallet: coinIdWallet,
+                    fee: fee,
+                    signatureWallet: signatureWallet,
+                },
+                true
+            );
             return response;
         } catch (error) {
             return { success: false, message: "Error revealing selection" };
@@ -610,7 +508,9 @@ class Session {
     }
     async getFeeEstimateClaimGame(coinId) {
         try {
-            const response = await Utils.fetch("/getFeeEstimateClaimGame", {coinId});
+            const response = await Utils.fetch("/getFeeEstimateClaimGame", {
+                coinId,
+            });
             if (response.success) {
                 return response.infoFee.estimates[0];
             }
@@ -622,11 +522,15 @@ class Session {
     }
     async claimGame(coinId, fee, signature) {
         try {
-            const response = await Utils.fetch("/claimGame", {
-                coinId: coinId,
-                fee: parseInt(fee),
-                signature: signature,
-            },true);
+            const response = await Utils.fetch(
+                "/claimGame",
+                {
+                    coinId: coinId,
+                    fee: parseInt(fee),
+                    signature: signature,
+                },
+                true
+            );
             return response;
         } catch (error) {
             return { success: false, message: "Error claiming game" };
@@ -635,19 +539,47 @@ class Session {
     }
     async revealSelectionPlayer1WithFee(coinId,selection,revealKey,signature,coinIdWallet,fee,signatureWallet) {
         try {
-            const response = await Utils.fetch("/revealSelectionPlayer1WithFee", {
-                coinId: coinId,
-                pubkey: this.pubkey,
-                selection: parseInt(selection),
-                revealKey: revealKey,
-                signature: signature,
-                coinIdWallet: coinIdWallet,
-                fee: fee,
-                signatureWallet: signatureWallet
-            },true);
+            const response = await Utils.fetch(
+                "/revealSelectionPlayer1WithFee",
+                {
+                    coinId: coinId,
+                    pubkey: this.pubkey,
+                    selection: parseInt(selection),
+                    revealKey: revealKey,
+                    signature: signature,
+                    coinIdWallet: coinIdWallet,
+                    fee: fee,
+                    signatureWallet: signatureWallet,
+                },
+                true
+            );
             return response;
         } catch (error) {
             return { success: false, message: "Error revealing selection" };
         }
+    }
+    async updateBlockchainSyncStatus(nodeStatusElement) {
+        if (!nodeStatusElement) {
+            console.error("Node status element not found");
+            return;
+        }
+        try {
+            const state = await Utils.getBlockChainState();
+            if (!state.success) {
+                throw new Error("Failed to get blockchain state");
+            }
+    
+            const { sync } = state.blockchain_state;
+            nodeStatusElement.textContent = sync.synced
+                ? "Synced"
+                : `Syncing ${sync.sync_progress_height}/${sync.sync_tip_height}`;
+        } catch (error) {
+            console.error("Error updating blockchain status:", error);
+            nodeStatusElement.textContent = "Error fetching status";
+        }
+    }
+    startPeriodicUpdate(nodeStatusElement, updateInterval = 60000) {
+        this.updateBlockchainSyncStatus(nodeStatusElement);
+        return setInterval(() => this.updateBlockchainSyncStatus(nodeStatusElement), updateInterval);
     }
 }
