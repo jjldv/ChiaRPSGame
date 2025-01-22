@@ -11,6 +11,8 @@ var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
 let gameWalletInfo;
 
 UserSession.on("connected", async () => {
+    const netWorkInfo = await Utils.fetch("/getNetworkInfo");
+    IS_MAINNET = netWorkInfo.success && netWorkInfo.network_name === "mainnet";
     gameWalletInfo = await UserSession.getWalletInfo();
     walletAddress.innerHTML = UserSession.walletAddress;
     playerPubKey.innerHTML = UserSession.pubkey;
@@ -19,8 +21,6 @@ UserSession.on("connected", async () => {
     });
     const feeOptions = [
         { fee: "0", time: -1 },
-        { fee: "0.000000000001", time: 1 },
-        { fee: "0.000000000002", time: 2 }
     ];
 
     const feeSelector = new FeeSelector(feeOptions, UserSession.prefix);
@@ -32,19 +32,12 @@ UserSession.on("connected", async () => {
 
     feeSelector.on("timerFinished", () => {
         console.log("Temporizador terminado, actualizando tarifas...");
-        // Aquí puedes actualizar las tarifas
-        // Por ejemplo:
-        // updateFees().then(newFees => feeSelector.updateOptions(newFees));
         //TODO: UPDATE FEE
     });
 
     setBalance();
-    setTimeout(() => {
-        //getPendingTransactions();
-    }, 2000);
     setInterval(() => {
         setBalance();
-        //getPendingTransactions();
     }, 30000);
 
     keyRPS.addEventListener("change", async () => {
@@ -68,51 +61,6 @@ async function setSelectionRPSHash() {
     ]);
     const sha256Message = await UserSession.sha256Hex(concatSelectWithKey);
     selectionRPSHash.value = sha256Message;
-}
-async function getPendingTransactions() {
-    let rows = "";
-    pendingTransactions.innerHTML = "";
-    for (let i = 0; i < coinIdSelect.options.length; i++) {
-        const option = coinIdSelect.options[i];
-        const coinId = option.value;
-        if (coinId === "") {
-            continue;
-        }
-        const Response = await Utils.getCoinPendingTransaction(coinId);
-        if (!Response.success && Response.pendingTransaction.length == 0) {
-            continue;
-        }
-
-        Response.pendingTransaction.forEach((transaction) => {
-            const option = {
-                value: transaction.spend_bundle.coin_spends[0].coin
-                    .parent_coin_info
-            };
-            const card = `
-                <div class="card cardWhite">
-                    <div class="card-title">Pending Transaction</div>
-                    <div class="card-content">
-                        <strong>Coin ID:</strong> ${option.value}<br>
-                        <strong>Coin Amount:</strong> ${Utils.formatMojosPrefix(
-                            transaction.spend_bundle.coin_spends[0].coin.amount,
-                            IS_MAINNET
-                        )}<br>
-                        <strong>Fee:</strong> ${Utils.formatMojos(
-                            transaction.fee
-                        )}<br>
-                        <strong>Action:</strong> ${Response.action}
-                    </div>
-                    <button class="card-button" id="${option.value}">💾</button>
-                </div>
-            `;
-            pendingTransactions.innerHTML += card;
-            document
-                .getElementById(option.value)
-                .addEventListener("click", async () => {
-                    Utils.downloadJson(option.value, transaction.spend_bundle);
-                });
-        });
-    }
 }
 async function setInitialBetAmountAndFee() {
     didCmdMessageSingature.innerHTML = "";
@@ -145,9 +93,6 @@ async function setBalance() {
     );
 }
 async function joinPlayer1() {
-    //Tenemos que mandar el monto a la wallet game alias launcher, en este mismo spendbundle,
-    //debemos de armar el coinspend del wallet game que se creara y se gastara en la misma transaccion
-    //mandando otro coinspend que el de Game que sse gastara tambien para poder poder su jugada
     if (!feeSpendbundle.value || feeSpendbundle.value == "") {
         Utils.displayToast("Enter a fee to create game");
         return;
@@ -175,15 +120,7 @@ async function joinPlayer1() {
         selectionRPSHash.value,
         UserSession.walletPuzzleHash
     );
-    if (!join) {
-        Utils.displayToast("Error joining the game");
-        return;
-    }
-    saveSelectionData();
-    keyRPS.value = "";
-    selectionRPSHash.value = "";
-    feeSpendbundle.value = "0";
-    betAmount.value = "";
+    
 }
 function selectOption(value, element) {
     document
@@ -327,7 +264,6 @@ async function joinPlayer1FromGoby(
         console.log("Total required:", totalRequired.toString());
         let gameWalletPuzzleHash = gameWalletInfo.wallet_puzzle_hash;
         let changePuzzleHash = cashOutAddressHash;
-        // 1. Seleccionar coins y crear gobyCoinSpends (esta parte está bien)
         const { selectedCoins, totalSelected, change } =
             await UserSession.Goby.selectCoins(totalRequired);
         const gobyCoinSpends = await UserSession.Goby.createStandarCoinSpends(
@@ -348,22 +284,8 @@ async function joinPlayer1FromGoby(
             puzzleHash: gameWalletPuzzleHash,
             amount: betAmount
         });
-
-        // Usar la solución que viene del backend
-        let concatenatedSolution = await UserSession.concat([
-            1, // ACTION_JOIN_PLAYER1
-            gameWalletPuzzleHash,
-            betAmount,
-            0,
-            gameWalletInfo.game_puzzle_hash,
-            betAmount,
-            selectionHash,
-            cashOutAddressHash,
-            gameWalletInfo.oracle_puzzle_hash
-        ]);
        
         let solutionJoinPlayer1 = await UserSession.createSolutionJoinPlayer1(gameWalletPuzzleHash,betAmount,selectionHash,cashOutAddressHash);
-        // Crear el coin spend usando la solución del backend
         const gameWalletCoinSpend = {
             coin: {
                 // Añadir el objeto coin dentro de una propiedad coin
@@ -375,19 +297,15 @@ async function joinPlayer1FromGoby(
             solution: solutionJoinPlayer1.solutionGameWallet
         };
 
-        // 3. Crear el Game coin
         const gameWalletCoinId = gameWalletSmartCoin.getName();
         const gameSmartCoin = new greenweb.SmartCoin({
             parentCoinInfo: gameWalletCoinId,
             puzzleHash: gameWalletInfo.game_puzzle_hash,
             amount: betAmount
         });
-
-        
-
+        const gameCoinId = gameSmartCoin.getName();
         const gameCoinSpend = {
             coin: {
-                // Añadir el objeto coin dentro de una propiedad coin
                 parent_coin_info: "0x" + gameWalletCoinId,
                 puzzle_hash: "0x" + gameWalletInfo.game_puzzle_hash,
                 amount: betAmount
@@ -395,21 +313,6 @@ async function joinPlayer1FromGoby(
             puzzle_reveal: gameWalletInfo.game_puzzle_reveal,
             solution: solutionJoinPlayer1.solutionGame
         };
-        // let messageToSign = await UserSession.concat([
-        //     1, // Action
-        //     betAmount,
-        //     fee,
-        //     gameWalletInfo.game_puzzle_hash,
-        //     selectionHash,
-        //     cashOutAddressHash,
-        //     gameWalletInfo.oracle_puzzle_hash
-        // ]);
-        // let sha256Message = await UserSession.sha256Hex(messageToSign);
-        // let gameWalletSignature = await UserSession.Goby.signMessage(
-        //     sha256Message,
-        //     UserSession.pubkey
-        // );
-        // 4. Combinar los coin spends y crear el spend bundle
         const allCoinSpends = [
             ...gobyCoinSpends,
             gameWalletCoinSpend,
@@ -421,11 +324,96 @@ async function joinPlayer1FromGoby(
             coin_spends: allCoinSpends,
             aggregated_signature: [signature]
         };
-        let spend = await UserSession.pushTx(spendBundle);
-        console.log("spend", spend);
-        return await UserSession.Goby.sendTransaction(spendBundle);
+        // let GobyTx = await UserSession.Goby.sendTransaction(spendBundle);
+        // console.log("GobyTx:", GobyTx);
+        let ServerTx = await UserSession.pushTx(spendBundle);
+        console.log("ServerTx:", ServerTx);
+        if (!ServerTx.success) {
+            Utils.displayToast("Error sending transaction");
+            return false;
+        }
+        Utils.displayToast("Transaction sent successfully, saving your selection data in json file...");
+        saveSelectionData();
+        keyRPS.value = "";
+        selectionRPSHash.value = "";
+        feeSpendbundle.value = "0";
+        document.getElementById("betAmount").value = "";
+
+        let GobyCoinId = gobySmartCoin.getName();
+        setPendingTransaction(gameCoinId);
+        return true;
     } catch (error) {
         console.error("Error in joinPlayer1FromGoby:", error);
         return false;
+    }
+}
+async function setPendingTransaction(coinId) {
+    const pendingTransactionsContainer = document.getElementById('pendingTransactions');
+    const existingCard = document.getElementById(`card-${coinId}`);
+    const Response = await Utils.getCoinPendingTransaction(coinId);
+
+    // Si no existe el card y hay transacción pendiente, crear nuevo card
+    if (!existingCard && Response.pendingTransaction && Response.pendingTransaction.length > 0) {
+        const transaction = Response.pendingTransaction[0];
+        const coinAmount = Response.coin.amount;
+        
+        const newCard = document.createElement('div');
+        newCard.id = `card-${coinId}`;
+        newCard.className = 'col-md-12 mb-3';
+        newCard.innerHTML = `
+            <div class="card">
+                <div class="card-body">
+                    <button type="button" class="btn-close float-end" aria-label="Close"></button>
+                    <div class="d-flex align-items-center gap-3">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h6 class="card-title mb-2 text-white">Pending Transaction</h6>
+                        <div class="transaction-details text-white">
+                        <p class="mb-1"><strong>Amount:</strong> ${Utils.formatMojosPrefix(coinAmount, IS_MAINNET)}</p>
+                        <p class="mb-1"><strong>Fee:</strong> ${Utils.formatMojos(transaction.fee)}</p>
+                        <p class="mb-1"><strong>Action:</strong> ${Response.action}</p>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Agregar manejador para el botón de cerrar
+        newCard.querySelector('.btn-close').addEventListener('click', () => newCard.remove());
+        pendingTransactionsContainer.appendChild(newCard);
+    }
+    
+    // Si existe el card y no hay transacciones pendientes, actualizar a completado
+    if (existingCard && (!Response.pendingTransaction || Response.pendingTransaction.length === 0)) {
+        existingCard.innerHTML = `
+            <div class="card">
+                <div class="card-body">
+                    <button type="button" class="btn-close float-end" aria-label="Close"></button>
+                    <div class="d-flex align-items-center gap-3">
+                    <i class="fas fa-check-circle text-success fa-2x"></i>
+                    <div class="flex-grow-1">
+                        <h6 class="card-title mb-2 text-white">Game Created Successfully!</h6>
+                        <a href="/gameDetails/${coinId}" target="_blank" class="btn btn-primary btn-sm">
+                        <i class="fas fa-gamepad me-2"></i>View Game
+                        </a>
+                    </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Actualizar manejador del botón de cerrar
+        existingCard.querySelector('.btn-close').addEventListener('click', () => existingCard.remove());
+        return; // No necesitamos seguir monitoreando
+    }
+
+    // Si todavía hay transacción pendiente, continuar monitoreando
+    if (Response.pendingTransaction && Response.pendingTransaction.length > 0) {
+        setTimeout(() => {
+            setPendingTransaction(coinId);
+        }, 5000);
     }
 }

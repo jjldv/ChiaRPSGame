@@ -152,8 +152,9 @@ class RPSDriver:
         except Exception as e:
             print("Error creating spend open game", e)
             raise e 
-    async def createSolutionJoinPlayer1(self,publicKeyPlayer1:str,puzzle_hash:str,amount:int,selectionHash:str,cashOutAddressHash:str):
+    async def createSolutionJoinPlayer1(self,pubKeyHex:str,puzzle_hash:str,amount:int,selectionHash:str,cashOutAddressHash:str):
         try:
+            publicKeyPlayer1 = G1Element.from_bytes(bytes.fromhex(pubKeyHex))
             PublicOracleMod = self.PUBLIC_ORACLE_MOD.curry(self.SERVER_GAME_PUBLIC_KEY,self.GAME_MOD.get_tree_hash())
             PlayerOracleMod = self.PLAYER_ORACLE_MOD.curry(self.SERVER_GAME_PUBLIC_KEY,publicKeyPlayer1,self.GAME_MOD.get_tree_hash())
             WalletPlayerMod = self.GAME_WALLET_MOD.curry(publicKeyPlayer1)
@@ -161,7 +162,7 @@ class RPSDriver:
             targetHash = GamePlayerMod.get_tree_hash()
             solution = Program.to([
                 self.ACTION_JOIN_PLAYER1,
-                puzzle_hash, 
+                WalletPlayerMod.get_tree_hash(), 
                 amount,
                 0, 
                 targetHash, 
@@ -711,7 +712,7 @@ class RPSDriver:
             coin = await full_node_client.get_mempool_items_by_coin_name(bytes32.fromhex(coinId))
             if coin and coin['mempool_items']:
                 spend_bundle = coin['mempool_items'][0]['spend_bundle']
-                coin_spends = spend_bundle['coin_spends'][0]
+                coin_spends = spend_bundle['coin_spends'][-1]
                 
                 curriedParams = await self.getPuzzleRevealCurriedParams(Program.fromhex(coin_spends['puzzle_reveal']).uncurry()[1])
                 solutionParams = await self.getSolutionParams(Program.fromhex(coin_spends['solution']))
@@ -1490,8 +1491,8 @@ class RPSDriver:
             coin_spends = []
             for coin_spend in jsonSpendBundle["coin_spends"]:
                 coin = Coin(
-                    bytes32.fromhex(coin_spend["coin"]["parent_coin_info"]),
-                    bytes32.fromhex(coin_spend["coin"]["puzzle_hash"]),
+                    bytes.fromhex(coin_spend["coin"]["parent_coin_info"].replace("0x", "")),
+                    bytes.fromhex(coin_spend["coin"]["puzzle_hash"].replace("0x", "")),
                     uint64(coin_spend["coin"]["amount"])
                 )
                 puzzle_reveal = SerializedProgram.fromhex(coin_spend["puzzle_reveal"])
