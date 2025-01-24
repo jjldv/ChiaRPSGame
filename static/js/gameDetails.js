@@ -281,45 +281,23 @@ async function closeGame(){
     try {
         let fee = Utils.XCHToMojos(parseFloat(feeSpendbundle.value));   
         const gobyCoinSpends = [];
-        if ( fee > 0){
-            const totalRequired = BigInt(fee);
-            console.log("Total required:", totalRequired.toString());
-            let changePuzzleHash = UserSession.walletPuzzleHash;
-            const { selectedCoins, totalSelected, change } = await UserSession.Goby.selectCoins(totalRequired);
-            gobyCoinSpends = await UserSession.Goby.createStandarCoinSpends(
-                selectedCoins,
-                UserSession.walletPuzzleHash,
-                0,
-                changePuzzleHash,
-                change,
-                fee
-            );
-            const gobySmartCoin = new greenweb.SmartCoin({
-                parentCoinInfo: gobyCoinSpends[0].coin.parent_coin_info,
-                puzzleHash: gobyCoinSpends[0].coin.puzzle_hash,
-                amount: gobyCoinSpends[0].coin.amount
-            });
+        if ( fee > gamedetail.gameAmount){
+            Utils.displayToast("Fee can't be higher than the game amount");
+            return false;
+            
         }
        
-        let solutionJoinPlayer1 = await UserSession.createSolutionCloseGame(gameWalletPuzzleHash,betAmount,selectionHash,cashOutAddressHash);
+        let solution = await UserSession.createSolutionCloseGame(gamedetail.gameAmount, fee);
         const gameCoinSpend = {
             coin: {
-                // Añadir el objeto coin dentro de una propiedad coin
                 parent_coin_info: "0x" + gamedetail.parentCoinId,
-                puzzle_hash: "0x" + gameWalletInfo.wallet_puzzle_hash,
+                puzzle_hash: "0x" + gamedetail.puzzleHash,
                 amount: gamedetail.gameAmount
             },
-            puzzle_reveal: gameWalletInfo.wallet_puzzle_reveal,
-            solution: solutionJoinPlayer1.solutionGameWallet
+            puzzle_reveal: gamedetail.puzzleReveal,
+            solution: solution.solution
         };
 
-        const gameWalletCoinId = gameWalletSmartCoin.getName();
-        const gameSmartCoin = new greenweb.SmartCoin({
-            parentCoinInfo: gameWalletCoinId,
-            puzzleHash: gameWalletInfo.game_puzzle_hash,
-            amount: betAmount
-        });
-        const gameCoinId = gameSmartCoin.getName();
        
         const allCoinSpends = [
             ...gobyCoinSpends,
@@ -331,26 +309,24 @@ async function closeGame(){
             coin_spends: allCoinSpends,
             aggregated_signature: [signature]
         };
-        // let GobyTx = await UserSession.Goby.sendTransaction(spendBundle);
-        // console.log("GobyTx:", GobyTx);
         let ServerTx = await UserSession.pushTx(spendBundle);
         console.log("ServerTx:", ServerTx);
         if (!ServerTx.success) {
             Utils.displayToast("Error sending transaction");
             return false;
         }
-        Utils.displayToast("Transaction sent successfully, saving your selection data in json file...");
-        saveSelectionData();
-        keyRPS.value = "";
-        selectionRPSHash.value = "";
+        Utils.displayToast("Transaction sent successfully");
         feeSpendbundle.value = "0";
-        document.getElementById("betAmount").value = "";
-
-        let GobyCoinId = gobySmartCoin.getName();
+        const gameSmartCoin = new greenweb.SmartCoin({
+            parentCoinInfo: gamedetail.parentCoinId,
+            puzzleHash: gamedetail.puzzleHash,
+            amount: gamedetail.gameAmount,
+        });
+        const gameCoinId =  gameSmartCoin.getName();
         setPendingTransaction(gameCoinId);
         return true;
     } catch (error) {
-        console.error("Error in joinPlayer1FromGoby:", error);
+        console.error("Error in close game:", error);
         return false;
     }
 }
@@ -498,4 +474,74 @@ async function setBalance() {
             UserSession.network == "mainnet"
         );
     });
+}
+async function setPendingTransaction(coinId) {
+    const pendingTransactionsContainer = document.getElementById('pendingTransactions');
+    const existingCard = document.getElementById(`card-${coinId}`);
+    const Response = await Utils.getCoinPendingTransaction(coinId);
+
+    // Si no existe el card y hay transacción pendiente, crear nuevo card
+    if (!existingCard && Response.pendingTransaction && Response.pendingTransaction.length > 0) {
+        const transaction = Response.pendingTransaction[0];
+        const coinAmount = Response.coin.amount;
+        
+        const newCard = document.createElement('div');
+        newCard.id = `card-${coinId}`;
+        newCard.className = 'col-md-12 mb-3';
+        newCard.innerHTML = `
+            <div class="card">
+                <div class="card-body">
+                    <button type="button" class="btn-close float-end" aria-label="Close"></button>
+                    <div class="d-flex align-items-center gap-3">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h6 class="card-title mb-2 text-white">Pending Transaction</h6>
+                        <div class="transaction-details text-white">
+                        <p class="mb-1"><strong>Amount:</strong> ${Utils.formatMojosPrefix(coinAmount, IS_MAINNET)}</p>
+                        <p class="mb-1"><strong>Fee:</strong> ${Utils.formatMojos(transaction.fee)}</p>
+                        <p class="mb-1"><strong>Action:</strong> ${Response.action}</p>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Agregar manejador para el botón de cerrar
+        newCard.querySelector('.btn-close').addEventListener('click', () => newCard.remove());
+        pendingTransactionsContainer.appendChild(newCard);
+    }
+    
+    // Si existe el card y no hay transacciones pendientes, actualizar a completado
+    if (existingCard && (!Response.pendingTransaction || Response.pendingTransaction.length === 0)) {
+        existingCard.innerHTML = `
+            <div class="card">
+                <div class="card-body">
+                    <button type="button" class="btn-close float-end" aria-label="Close"></button>
+                    <div class="d-flex align-items-center gap-3">
+                    <i class="fas fa-check-circle text-success fa-2x"></i>
+                    <div class="flex-grow-1">
+                        <h6 class="card-title mb-2 text-white">Game Created Successfully!</h6>
+                        <a href="/gameDetails/${coinId}" target="_blank" class="btn btn-primary btn-sm">
+                        <i class="fas fa-gamepad me-2"></i>View Game
+                        </a>
+                    </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Actualizar manejador del botón de cerrar
+        existingCard.querySelector('.btn-close').addEventListener('click', () => existingCard.remove());
+        return; // No necesitamos seguir monitoreando
+    }
+
+    // Si todavía hay transacción pendiente, continuar monitoreando
+    if (Response.pendingTransaction && Response.pendingTransaction.length > 0) {
+        setTimeout(() => {
+            setPendingTransaction(coinId);
+        }, 5000);
+    }
 }

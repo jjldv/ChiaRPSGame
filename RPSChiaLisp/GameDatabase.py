@@ -204,7 +204,7 @@ class GameDatabase:
     def updateLastIndexSync(self, new_index):
         new_index = new_index + 1
         current_index = self.getLastIndexSync()
-        if current_index is None:
+        if current_index == 0:
             self.c.execute('''
             INSERT INTO sync_index (last_block_index) VALUES (?)
             ''', (new_index,))
@@ -218,7 +218,7 @@ class GameDatabase:
     def updateLastIndexSyncOpenGames(self, new_index):
         new_index = new_index + 1
         current_index = self.getLastIndexSyncOpenGames()
-        if current_index is None:
+        if current_index == 0:
             self.c.execute('''
             INSERT INTO sync_index_open_games (last_block_index) VALUES (?)
             ''', (new_index,))

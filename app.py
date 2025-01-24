@@ -366,16 +366,25 @@ async def verifySignatureLogin(request: Request):
         return JSONResponse(content=response)
     except Exception as e:
         return JSONResponse(content={"success": False, "message": str(e)})
+@app.post("/createSolutionCloseGame")
+async def createSolutionCloseGame(request: Request):
+    try:
+        data = await request.json()
+        coinAmount = data['coinAmount']
+        fee = data['fee']
+        response = await Driver.createSolutionCloseGame(coinAmount,fee)
+        return JSONResponse(content=response)
+    except Exception as e:
+        return JSONResponse(content={"success": False, "message": str(e)})
 @app.post("/createSolutionJoinPlayer1")
 async def createSolutionJoinPlayer1(request: Request):
     try:
         data = await request.json()
-        puzzle_hash = data['puzzle_hash']
         publicKeyPlayer1 = data['pubkey'].replace("0x", "")
         amount = data['amount']
         selectionHash = data['selectionHash']
         cashOutAddressHash = data['cashOutAddressHash']
-        response = await Driver.createSolutionJoinPlayer1(publicKeyPlayer1,puzzle_hash,amount,selectionHash,cashOutAddressHash)
+        response = await Driver.createSolutionJoinPlayer1(publicKeyPlayer1,amount,selectionHash,cashOutAddressHash)
         return JSONResponse(content=response)
     except Exception as e:
         return JSONResponse(content={"success": False, "message": str(e)})

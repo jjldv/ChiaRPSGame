@@ -191,6 +191,22 @@ class Session {
             return { success: false, message: "Error getting wallet info" };
         }
     }
+    async createSolutionCloseGame(coinAmount,fee) {
+        try {
+            const response = await fetch("/createSolutionCloseGame", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ pubkey: this.pubkey, coinAmount: coinAmount, fee: fee }),
+            });
+            const JsonResponse = await response.json();
+            return JsonResponse;
+        } catch (error) {
+            console.error(error);
+            return { success: false, message: "Error creating solution" };
+        }
+    }
     async createSolutionJoinPlayer1(puzzle_hash,amount,selectionHash,cashOutAddressHash){
         try {
             const response = await fetch("/createSolutionJoinPlayer1", {
