@@ -135,28 +135,15 @@
                     </div>
                     <div id="CloseGameContainer" style="text-align: center; border-style: solid; padding: 10px; display: none;">
                         <h3>Close Game</h3>
-                        <div class="form-group">
-                            <label for="feeSpendbundle">Calculated Fee for 60 seconds:</label>
-                            <input type="number" class="form-control" id="feeSpendbundle"  value="0" min="0.000000000001" step="0.000000000001">
-                        </div>
-                        <div class="form-group">
-                            <label for="amountreceiveSpendbundle">You will receive:</label>
-                            <p id="amountreceiveSpendbundle">----</p>
-                        </div>
-                        <div class="form-group position-relative">
-                            <label class="customLabel">Sign the message to add the spendbundle</label>
-                            <p>You are signing:</p>
-                            <p style="overflow-x: auto;margin-top: -20px !important;">actionRetire(3)+fee+puzzleHashWP1+CoinId+GenesisChallenge</p>
-                            <pre class="precustom"><code id="cmdSingByDID" >chia rpc wallet sign_message_by_id '{"id":"<span id="didCmdSingature"></span>","message":"<span id="didCmdMessageSingature"></span>","is_hex":"True","safe_mode":"False"}'</code>
-                            </pre>
-                            <button type="button" class="btn position-absolute copy-btn" style="top: 74px; "
-                                onclick="Utils.copyToClipboard('#cmdSingByDID')">
-                                <i class="fas fa-copy"></i>
-                            </button>
-                        </div>
-                        <div class="form-group">
-                            <label for="signatureSpendbundle">Signature:</label>
-                            <input type="text" class="form-control" id="signatureSpendbundle" placeholder="Enter the signature">
+                        <i class="fas fa-wallet fa-3x mb-3"></i>
+                        <h3 class="walletBalance">----</h3>
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label for="feeSelector">Network Fee</label>
+                                <div id="feeSelectorContainer"></div>
+                                <input type="number" class="form-control" id="feeSpendbundle" value="0" min="0.000000000001" step="0.000000000001" style="display: none;">
+
+                            </div>
                         </div>
                         <br>
                         <button  class="btn btn-primary btn-lg" onclick="closeGame()">
@@ -321,6 +308,7 @@
     <script src="/static/js/ModalGeneric.js"></script>
     <script src="/static/js/ModalGobyWallet.js"></script>
     <script src="/static/js/Session.js"></script>
+    <script src="/static/js/FeeSelector.js"></script>
     <script src="/static/js/gameDetails.js"></script>
 </body>
 

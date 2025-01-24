@@ -1,3 +1,5 @@
+import time
+import datetime
 import os
 from fastapi import Body, FastAPI, Request, HTTPException, Response
 from fastapi.responses import JSONResponse
@@ -16,12 +18,21 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # Function to sync history games periodically
 async def syncHistoryGames():
     while True:
+        start_time = time.time()
         try:
+            print("Initiating sync open games")
+            await Driver.syncOpenGames()
+            print("syncOpenGames executed successfully")
+            print("Initiating sync history games")
             await Driver.syncHistoryGames()
             print("syncHistoryGames executed successfully")
         except Exception as e:
             print(f"Error during syncHistoryGames: {e}")
-        await asyncio.sleep(60)  
+            
+        # Calculate time elapsed and wait remaining time if any
+        elapsed = time.time() - start_time
+        wait_time = max(30 - elapsed, 0)
+        await asyncio.sleep(wait_time)
 
 @app.on_event("startup")
 async def startup_event():
@@ -73,7 +84,7 @@ async def getUserOpenGames(request: Request):
     try:
         data = await request.json()  
         pubkey = data['pubkey'].replace("0x", "")
-        response = await Driver.getUserOpenGames(pubkey)
+        response = await Driver.getUserOpenGamesDB(pubkey)
         return JSONResponse(content=response)
     except Exception as e:
         return JSONResponse(content={"success": False, "message": str(e)})
@@ -82,22 +93,21 @@ async def getUserHistoryGames(request: Request):
     try:
         data = await request.json()  
         pubkey = data['pubkey'].replace("0x", "")
-        response = await Driver.getUserHistoryGames(pubkey)
+        response = await Driver.getUserHistoryGamesDB(pubkey)
         return JSONResponse(content=response)
     except Exception as e:
         return JSONResponse(content={"success": False, "message": str(e)})
 @app.post("/getHistoryGames")
 async def getHistoryGames(request: Request):
     try:
-        data = await request.json()  
-        response = await Driver.getHistoryGames()
+        response = await Driver.getHistoryGamesDB()
         return JSONResponse(content=response)
     except Exception as e:
         return JSONResponse(content={"success": False, "message": str(e)})
 @app.post("/getOpenGames")
 async def getOpenGames(request: Request):
     try:
-        response = await Driver.getOpenGames()
+        response = await Driver.getOpenGamesDB()
         return JSONResponse(content=response)
     except Exception as e:
         return JSONResponse(content={"success": False, "message": str(e)})
@@ -235,7 +245,7 @@ async def getGameDetails(request: Request):
     try:
         data = await request.json()
         coinId = data['coinId']
-        response = await Driver.getGameDetails(coinId)
+        response = await Driver.getGameDetailsDB(coinId)
         return JSONResponse(content=response)
     except Exception as e:
         return JSONResponse(content={"success": False, "message": str(e)})

@@ -1,24 +1,29 @@
 let UserSession = new Session();
 const coinId = window.location.pathname.split("/").pop();
-let coinHash;
 let coinRecord;
 let IntervalTx;
 let GameAmount = 0;
 IS_MAINNET = null;
+UserSession.on("connected", async () => {
+    const feeOptions = [
+        { fee: "0", time: -1 },
+    ];
+    console.log(UserSession.prefix);
+    const feeSelector = new FeeSelector(feeOptions, UserSession.prefix);
+    feeSelector.on("change", (data) => {
+        feeSpendbundle.value = data.value;
+    });
+    feeSelector.on("timerFinished", () => {
+        console.log("Temporizador terminado, actualizando tarifas...");
+        //TODO: UPDATE FEE
+    });
+    
+});
 document.addEventListener("DOMContentLoaded", async function () {
     const netWorkInfo = await Utils.fetch("/getNetworkInfo");
     IS_MAINNET = netWorkInfo.success && netWorkInfo.network_name === "mainnet";
-    didCmdSingature.innerHTML = UserSession.DID;
-    didCmdSingatureJoin.innerHTML = UserSession.DID;
-    didCmdSingatureReveal.innerHTML = UserSession.DID;
-    didCmdSingatureFeeReveal.innerHTML = UserSession.DID;
-    didCmdSingatureClaim.innerHTML = UserSession.DID;
     coinID.innerHTML = coinId;
-    feeSpendbundle.addEventListener("change", async () => {
-        await updateReceiveAmount();
-        setCmdMessageSignature();
 
-    });
     feeSpendbundleClaim.addEventListener("change", async () => {
         await updateReceiveAmountClaim();
         setCmdMessageSignatureClaim();
@@ -146,62 +151,64 @@ async function getGameDetails(showSpinner = false){
     if (!RgameInfo.success){
         return;
     }
-    GameAmount = RgameInfo.coinRecord.coin.amount;
-    coinRecord = RgameInfo.coinRecord;
-    coinHash = RgameInfo.coinRecord.coin.puzzle_hash;
-    coinDate.innerHTML = RgameInfo.coinRecord.date;
-    coinAmount.innerHTML = Utils.formatMojosPrefix(RgameInfo.coinRecord.coin.amount,IS_MAINNET);
-    publicKeyPlayer1.innerHTML = `<a href="/userHistoryGames/${RgameInfo.coinRecord.gameParams.publicKeyPlayer1}">${RgameInfo.coinRecord.gameParams.publicKeyPlayer1}</a>`;
-    compromisePlayer1.innerHTML = RgameInfo.coinRecord.gameParams.compromisePlayer1;
-    publicKeyPlayer2.innerHTML = RgameInfo.coinRecord.gameParams.publicKeyPlayer2 !="----" ? `<a href="/userHistoryGames/${RgameInfo.coinRecord.gameParams.publicKeyPlayer2}">${RgameInfo.coinRecord.gameParams.publicKeyPlayer2}</a>` : RgameInfo.coinRecord.gameParams.publicKeyPlayer2;
-    selectionPlayer2.innerHTML = RgameInfo.coinRecord.gameParams.emojiSelectionPlayer2;
-    gamePuzzleReveal.innerHTML = RgameInfo.coinRecord.gamePuzzleReveal;
-    gamePuzzleRevealDisassembled.innerHTML = RgameInfo.coinRecord.gamePuzzleRevealDisassembled;
-    gamePuzzleHash.innerHTML = RgameInfo.coinRecord.gamePuzzleHash;
-    coinStatus.innerHTML = RgameInfo.coinRecord.spent_block_index == 0 ? "Unspent" : "Spent";
-    coinStage.innerHTML = RgameInfo.coinRecord.stageName;
-    gameStatus.innerHTML = RgameInfo.coinRecord.gameStatus;
+    let gamedetail = RgameInfo.game;
+    GameAmount = RgameInfo.game.gameAmount;
+    const date = new Date(gamedetail.timestamp * 1000);
+    const formattedDate = date.toLocaleString();
+    coinDate.innerHTML = formattedDate;
+    coinAmount.innerHTML = Utils.formatMojosPrefix(GameAmount,IS_MAINNET);
+    publicKeyPlayer1.innerHTML = `<a href="/userHistoryGames/${gamedetail.publicKeyPlayer1}">${gamedetail.publicKeyPlayer1}</a>`;
+    compromisePlayer1.innerHTML = gamedetail.compromisePlayer1;
+    publicKeyPlayer2.innerHTML = gamedetail.publicKeyPlayer2 !="----" ? `<a href="/userHistoryGames/${gamedetail.publicKeyPlayer2}">${gamedetail.publicKeyPlayer2}</a>` : gamedetail.publicKeyPlayer2;
+    selectionPlayer2.innerHTML = gamedetail.emojiSelectionPlayer2;
+    //gamePuzzleReveal.innerHTML = RgameInfo.coinRecord.gamePuzzleReveal;
+    //gamePuzzleRevealDisassembled.innerHTML = RgameInfo.coinRecord.gamePuzzleRevealDisassembled;
+    //gamePuzzleHash.innerHTML = RgameInfo.coinRecord.gamePuzzleHash;
+    coinStatus.innerHTML = gamedetail.coinStatus;
+    coinStage.innerHTML = gamedetail.gameStatusDescription;
+    gameStatus.innerHTML = RgameInfo.gameCoins[RgameInfo.gameCoins.length - 1].gameStatusDescription;
     let htmlContent = '';
-    RgameInfo.coinRecord.gameCoins.forEach((coin, index) => {
-        htmlContent += `<a href="/gameDetails/${coin.coin_id}">${coin.stageName}</a><br>`;
+    RgameInfo.gameCoins.forEach((coin, index) => {
+        htmlContent += `<a href="/gameDetails/${coin.coinId}">${coin.gameStatusDescription}</a><br>`;
     });
     gameCoins.innerHTML = htmlContent
-    if(RgameInfo.coinRecord.spent_block_index != 0){
+    if(gamedetail.spentBlockIndex != 0){
         CloseGameContainer.style.display = "none";
         JoinGameContainer.style.display = "none";
         RevealGameContainer.style.display = "none";
         ClaimGameContainer.style.display = "none";
     }
-    if(RgameInfo.coinRecord.spent_block_index != 0){
+    if(gamedetail.spentBlockIndex != 0){
         clearInterval(IntervalTx);
     }
     //Claim Player 2
-    if (RgameInfo.coinRecord.spent_block_index == 0 && RgameInfo.coinRecord.coinStage == 3 && RgameInfo.coinRecord.gameParams.publicKeyPlayer2 == UserSession.pubkey){
+    if (gamedetail.spentBlockIndex == 0 && gamedetail.coinStage == 3 && gamedetail.publicKeyPlayer2 == UserSession.pubkey){
         ClaimGameContainer.style.display = "block";
         if(feeSpendbundleClaim.value == "0" || feeSpendbundleClaim.value == ""){
             setFeeClaimGame();
         }
         return;
     }
-    if (RgameInfo.coinRecord.spent_block_index == 0 && RgameInfo.coinRecord.coinStage == 2  && RgameInfo.coinRecord.gameParams.publicKeyPlayer1 == UserSession.pubkey ){
+    if (gamedetail.spentBlockIndex == 0 && gamedetail.coinStage == 2  && gamedetail.publicKeyPlayer1 == UserSession.pubkey.replace("0x","") ){
         CloseGameContainer.style.display = "block";
-        if(feeSpendbundle.value == "0" || feeSpendbundle.value == ""){
-            setFeeCloseGame();
-        }
+        setBalance();
+        setInterval(() => {
+            setBalance();
+        }, 30000);
         return;
     }
     //Reveal Player 1
-    if (RgameInfo.coinRecord.spent_block_index == 0 && RgameInfo.coinRecord.coinStage == 3 && UserSession.pubkey && UserSession.pubkey == RgameInfo.coinRecord.gameParams.publicKeyPlayer1){
+    if (gamedetail.spent_block_index == 0 && gamedetail.coinStage == 3 && UserSession.pubkey && UserSession.pubkey == gamedetail.publicKeyPlayer1){
         getBalance();
         RevealGameContainer.style.display = "block";
     }
     //Join Player 2
-    if (RgameInfo.coinRecord.spent_block_index == 0 && RgameInfo.coinRecord.coinStage == 2 && UserSession.pubkey && UserSession.pubkey != RgameInfo.coinRecord.gameParams.publicKeyPlayer1){
+    if (gamedetail.spent_block_index == 0 && gamedetail.coinStage == 2 && UserSession.pubkey && UserSession.pubkey != gamedetail.publicKeyPlayer1){
         JoinGameContainer.style.display = "block";
         if(feeSpendbundleJoin.value == "0" || feeSpendbundleJoin.value == ""){
             cashOutAddress.value = UserSession.cashOutAddress??"";
             getBalance();
-            gameAmount.innerHTML = Utils.formatMojosPrefix(RgameInfo.coinRecord.coin.amount,IS_MAINNET);
+            gameAmount.innerHTML = Utils.formatMojosPrefix(gamedetail.coin.amount,IS_MAINNET);
         }
     }
 }
@@ -370,20 +377,7 @@ async function setCmdMessageSignatureReveal(){
     let message = `${sha256Message}${coinId}${UserSession.genesisChallenge}`;
     didCmdMessageSingatureReveal.innerHTML = message;
 }
-async function setCmdMessageSignatureRevealFee(){
-    signatureSpendbundleFeeReveal.value = "";
-    if(RPSSelectReveal.value == "" || keyRPSReveal.value == "" || feeSpendbundleReveal.value == ""){
-        return;
-    }
-    const concatMessage2Sign = await UserSession.concat([3,Utils.XCHToMojos(parseFloat(feeSpendbundleReveal.value)), parseInt(coinIdSelectReveal.options[coinIdSelectReveal.selectedIndex].dataset.amount),coinHash,"0x"+UserSession.walletPuzzleHash]);
-    const sha256Message = await UserSession.sha256Hex(concatMessage2Sign);
-    if (!sha256Message) {
-        Utils.displayToast("Error setting the sha256 to message to sign", "error");
-        return;
-    }
-    let message = `${sha256Message}${coinIdSelectReveal.value}${UserSession.genesisChallenge}`;
-    didCmdMessageSingatureFeeReveal.innerHTML = message;
-}
+
 
 async function revealSelectionPlayer1(){
     if(RPSSelectReveal.value == "" || keyRPSReveal.value == "" || signatureSpendbundleReveal.value == ""){
@@ -434,4 +428,13 @@ async function claimGame(){
     }
     signatureSpendbundleClaim.value = "";
     feeSpendbundleClaim.value = "";
+}
+async function setBalance() {
+    const balance = await UserSession.getWalletBalance();
+    document.querySelectorAll('.walletBalance').forEach(element => {
+        element.innerHTML = Utils.formatMojosPrefix(
+            balance.spendable,
+            UserSession.network == "mainnet"
+        );
+    });
 }

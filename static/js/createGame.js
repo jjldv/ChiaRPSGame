@@ -251,14 +251,7 @@ async function validateBalance() {
         balanceValidationMessage.style.color = "green";
     }
 }
-
-async function joinPlayer1FromGoby(
-    toGameWalletAddress,
-    betAmount,
-    fee,
-    selectionHash,
-    cashOutAddressHash
-) {
+async function joinPlayer1FromGoby(toGameWalletAddress,betAmount,fee,selectionHash,cashOutAddressHash) {
     try {
         const totalRequired = BigInt(betAmount) + BigInt(fee);
         console.log("Total required:", totalRequired.toString());
