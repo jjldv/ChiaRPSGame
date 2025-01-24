@@ -65,7 +65,10 @@ class RPSDriver:
                     gameF = (
                             game["parent_coin_info"],
                             game["coin_id"],
+                            game["puzzleHash"],
+                            game["puzzleReveal"],
                             game["gameResult"],
+                            game["stage"],
                             game["stageName"],
                             game["publicKeyWinner"],
                             game["publicKeyPlayer1"],
@@ -103,7 +106,10 @@ class RPSDriver:
                     gameF = (
                             game["parent_coin_info"],
                             game["coin_id"],
+                            game["puzzleHash"],
+                            game["puzzleReveal"],
                             game["gameResult"],
+                            game["stage"],
                             game["stageName"],
                             game["publicKeyWinner"],
                             game["publicKeyPlayer1"],
@@ -153,8 +159,14 @@ class RPSDriver:
     async def getGameDetailsDB(self, coinId: str):
         try:
             game = self.GameDatabase.getGameDetails(coinId)
+            
+            if game["stage"] == 3:
+                game["selectionPlayer2"] = "Reveal P1 to see"
+                game["emojiSelectionPlayer2"] = self.getEmoji(0)
+            
+            game["puzzleRevealDisassembled"] = disassemble(Program.fromhex(game["puzzleReveal"]))
             gameCoins = self.GameDatabase.getCoinsChain(coinId)
-            return {"success": True, "game": game, "gameCoins": gameCoins}
+            return {"success": True, "game": game, "gameCoins": gameCoins }
         except Exception as e:
             return {"success": False, "message": str(e)}
     async def getUserHistoryGamesDB(self, pubkey: str):
@@ -403,7 +415,9 @@ class RPSDriver:
             for oracleCoin in listOracleCoins:
                 parentCoin = await self.getCoinRecord(oracleCoin.coin.parent_coin_info.hex())
                 infoStageParent = await self.getGameStageInfo(parentCoin)
-                gameCoin = await self.getCoinRecordByHint(oracleCoin.confirmed_block_index,std_hash(infoStageParent["GameMod"].get_tree_hash()).hex(),False)
+                gameCoin = []
+                if oracleCoin.spent_block_index == 0:
+                    gameCoin = await self.getCoinRecordByHint(oracleCoin.confirmed_block_index,std_hash(infoStageParent["GameMod"].get_tree_hash()).hex(),False)
                 
                 if gameCoin == None:
                     raise Exception("Game coin not found")
@@ -434,6 +448,9 @@ class RPSDriver:
                     'publicKeyWinner': info["publicKeyWinner"],
                     'stageName': info["stageName"],
                     'oracleConfirmedBlockIndex': oracleCoin.confirmed_block_index,
+                    'puzzleHash': info["GameMod"].get_tree_hash().hex(),
+                    'puzzleReveal': info["GameMod"].__str__()
+
                 }
                 openGames.append(formatedCoin)
             return {"success": True, "openGames": openGames}
@@ -534,6 +551,8 @@ class RPSDriver:
                     'publicKeyWinner': infoStage["publicKeyWinner"],
                     'stageName': infoStage["stageName"],
                     'oracleConfirmedBlockIndex': oracleCoin.confirmed_block_index,
+                    'puzzleHash': infoStage["GameMod"].get_tree_hash().hex(),
+                    'puzzleReveal': infoStage["GameMod"].__str__()
                 }
                 historyGames.append(formatedCoin)
             return {"success": True, "historyGames": historyGames}

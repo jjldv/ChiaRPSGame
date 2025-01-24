@@ -43,7 +43,10 @@ class GameDatabase:
             id INTEGER PRIMARY KEY,
             parentCoinId TEXT,
             coinId TEXT,
+            puzzleHash TEXT,
+            puzzleReveal TEXT,
             gameStatus TEXT,
+            stage INTEGER,
             gameStatusDescription TEXT,
             publicKeyWinner TEXT,
             publicKeyPlayer1 TEXT,
@@ -116,8 +119,8 @@ class GameDatabase:
 
     def insertGameData(self, data):
         self.c.execute('''
-        INSERT INTO game_data ( parentCoinId, coinId, gameStatus, gameStatusDescription, publicKeyWinner, publicKeyPlayer1, publicKeyPlayer2, compromisePlayer1, selectionPlayer1, secretKeyPlayer1, emojiSelectionPlayer1, selectionPlayer2, emojiSelectionPlayer2, dateGame, timestamp, gameAmount, confirmedBlockIndex, spentBlockIndex, oracleConfirmedBlockIndex, coinStatus)
-        VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO game_data ( parentCoinId, coinId,puzzleHash,puzzleReveal, gameStatus,stage, gameStatusDescription, publicKeyWinner, publicKeyPlayer1, publicKeyPlayer2, compromisePlayer1, selectionPlayer1, secretKeyPlayer1, emojiSelectionPlayer1, selectionPlayer2, emojiSelectionPlayer2, dateGame, timestamp, gameAmount, confirmedBlockIndex, spentBlockIndex, oracleConfirmedBlockIndex, coinStatus)
+        VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?, ?, ?, ?, ?, ?, ?,?, ?,?, ?)
         ''', data)
 
         self.conn.commit()
@@ -256,19 +259,29 @@ class GameDatabase:
 
     def getCoinsChain(self, coinId):
         self.c.execute('''
-        SELECT * FROM game_data
-        WHERE coinId IN (
-            WITH RECURSIVE coin_chain(id) AS (
-                SELECT coinId FROM game_data WHERE coinId = ?
+        WITH RECURSIVE chain AS (
+            -- Encuentra el nodo inicial y todos sus ancestros
+            WITH RECURSIVE ancestors AS (
+                SELECT * FROM game_data WHERE coinId = ?
                 UNION ALL
-                SELECT g.coinId 
-                FROM game_data g, coin_chain c
-                WHERE g.parentCoinId = c.id
+                SELECT g.* FROM game_data g
+                INNER JOIN ancestors a ON g.coinId = a.parentCoinId
+            ),
+            -- Encuentra todos los descendientes
+            descendants AS (
+                SELECT * FROM game_data WHERE coinId = ?
+                UNION ALL
+                SELECT g.* FROM game_data g
+                INNER JOIN descendants d ON g.parentCoinId = d.coinId
             )
-            SELECT * FROM coin_chain
+            -- Une ancestros y descendientes
+            SELECT * FROM ancestors
+            UNION
+            SELECT * FROM descendants
         )
+        SELECT DISTINCT * FROM chain
         ORDER BY timestamp ASC
-        ''', (coinId,))
+        ''', (coinId, coinId))
         return [dict(row) for row in self.c.fetchall()]
     def getUserHistoryGames(self, publicKey):
         self.c.execute('''
