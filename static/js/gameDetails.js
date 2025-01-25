@@ -30,10 +30,10 @@ document.addEventListener("DOMContentLoaded", async function () {
         setCmdMessageSignatureClaim();
     });
     await getGameDetails(true);
-    getPendingTransactions();
+    setPendingTransaction();
     IntervalTx = setInterval(() => {
         getGameDetails();
-        getPendingTransactions();
+        setPendingTransaction();
     }, 30000);
 
     coinIdSelect.addEventListener("change", async () => {
@@ -121,32 +121,6 @@ async function setFeeJoinPlayer2(){
 async function updateChangeAmount(){
     amountChangeCoin.innerHTML = Utils.formatMojos(coinIdSelect.options[coinIdSelect.selectedIndex].dataset.amount - (Utils.XCHToMojos(parseFloat(feeSpendbundleJoin.value)) + GameAmount));
 }
-async function getPendingTransactions() {
-    let rows = "";
-    pendingTransactions.innerHTML = "";
-    const Response = await Utils.getCoinPendingTransaction(coinId);
-    
-    Response.pendingTransaction.forEach((transaction) => {
-        const option = { value: transaction.spend_bundle.coin_spends[0].coin.parent_coin_info }; 
-        const card = `
-            <div class="card cardWhite">
-                <div class="card-title">Pending Transaction</div>
-                <div class="card-content">
-                    <strong>Coin ID:</strong> ${option.value}<br>
-                    <strong>Coin Amount:</strong> ${Utils.formatMojosPrefix(transaction.spend_bundle.coin_spends[0].coin.amount,IS_MAINNET)}<br>
-                    <strong>Fee:</strong> ${Utils.formatMojos(transaction.fee)}<br>
-                    <strong>Action:</strong> ${Response.action}
-                </div>
-                <button class="card-button" id="${option.value}">💾</button>
-            </div>
-        `;
-        pendingTransactions.innerHTML += card;
-        document.getElementById(option.value).addEventListener("click", async () => {
-            Utils.downloadJson(option.value, transaction.spend_bundle);
-        });
-    });
-
-}
 async function getGameDetails(showSpinner = false){
     const RgameInfo = await Utils.getGameDetails(coinId,showSpinner);
     if (!RgameInfo.success){
@@ -190,7 +164,7 @@ async function getGameDetails(showSpinner = false){
         }
         return;
     }
-    if (gamedetail.spentBlockIndex == 0 && gamedetail.stage == 2  && gamedetail.publicKeyPlayer1 == UserSession.pubkey.replace("0x","") ){
+    if (gamedetail.spentBlockIndex == 0 && gamedetail.stage == 2  && gamedetail.publicKeyPlayer1 == UserSession.pubkey?.replace("0x","") ){
         CloseGameContainer.style.display = "block";
         setBalance();
         setInterval(() => {
@@ -309,21 +283,21 @@ async function closeGame(){
             coin_spends: allCoinSpends,
             aggregated_signature: [signature]
         };
-        let ServerTx = await UserSession.pushTx(spendBundle);
-        console.log("ServerTx:", ServerTx);
-        if (!ServerTx.success) {
-            Utils.displayToast("Error sending transaction");
-            return false;
-        }
-        Utils.displayToast("Transaction sent successfully");
-        feeSpendbundle.value = "0";
         const gameSmartCoin = new greenweb.SmartCoin({
             parentCoinInfo: gamedetail.parentCoinId,
             puzzleHash: gamedetail.puzzleHash,
             amount: gamedetail.gameAmount,
         });
         const gameCoinId =  gameSmartCoin.getName();
-        setPendingTransaction(gameCoinId);
+        let ServerTx = await UserSession.closeGame(gameCoinId, fee, signature);
+        console.log("ServerTx:", ServerTx);
+        if (!ServerTx.success) {
+            Utils.displayToast(ServerTx.message);
+            return false;
+        }
+        Utils.displayToast("Transaction sent successfully");
+        feeSpendbundle.value = "0";
+        setPendingTransaction();
         return true;
     } catch (error) {
         console.error("Error in close game:", error);
@@ -398,7 +372,7 @@ async function joinPlayer2(){
     signatureSpendbundleJoin.value = "";   
     feeSpendbundleJoin.value = "";
     if(RjoinPlayer2.success){
-        getPendingTransactions();
+        setPendingTransaction();
     }
 }
 async function setCmdMessageSignatureReveal(){
@@ -441,7 +415,7 @@ async function revealSelectionPlayer1(){
         Utils.displayToast(RrevealSelectionPlayer1.message);
     }
     if(RrevealSelectionPlayer1.success){
-        getPendingTransactions();
+        setPendingTransaction();
     }
     if(RrevealSelectionPlayer1.success){
         RPSSelectReveal.value = "";
@@ -461,7 +435,7 @@ async function claimGame(){
         Utils.displayToast(RclaimGame.message);
     }
     if(RclaimGame.success){
-        getPendingTransactions();
+        setPendingTransaction();
     }
     signatureSpendbundleClaim.value = "";
     feeSpendbundleClaim.value = "";
@@ -475,7 +449,8 @@ async function setBalance() {
         );
     });
 }
-async function setPendingTransaction(coinId) {
+async function setPendingTransaction() {
+    let coinId = window.location.pathname.split("/").pop();
     const pendingTransactionsContainer = document.getElementById('pendingTransactions');
     const existingCard = document.getElementById(`card-${coinId}`);
     const Response = await Utils.getCoinPendingTransaction(coinId);
@@ -523,10 +498,7 @@ async function setPendingTransaction(coinId) {
                     <div class="d-flex align-items-center gap-3">
                     <i class="fas fa-check-circle text-success fa-2x"></i>
                     <div class="flex-grow-1">
-                        <h6 class="card-title mb-2 text-white">Game Created Successfully!</h6>
-                        <a href="/gameDetails/${coinId}" target="_blank" class="btn btn-primary btn-sm">
-                        <i class="fas fa-gamepad me-2"></i>View Game
-                        </a>
+                        <h6 class="card-title mb-2 text-white">transaction completed</h6>
                     </div>
                     </div>
                 </div>
@@ -541,7 +513,7 @@ async function setPendingTransaction(coinId) {
     // Si todavía hay transacción pendiente, continuar monitoreando
     if (Response.pendingTransaction && Response.pendingTransaction.length > 0) {
         setTimeout(() => {
-            setPendingTransaction(coinId);
+            setPendingTransaction();
         }, 5000);
     }
 }

@@ -267,10 +267,14 @@ async function joinPlayer1FromGoby(toGameWalletAddress,betAmount,fee,selectionHa
             change,
             fee
         );
+        gobyCoinSpends.sort((a, b) => a.coin.amount - b.coin.amount);
+
+        const highestCoinSpend = gobyCoinSpends[gobyCoinSpends.length - 1];
+
         const gobySmartCoin = new greenweb.SmartCoin({
-            parentCoinInfo: gobyCoinSpends[0].coin.parent_coin_info,
-            puzzleHash: gobyCoinSpends[0].coin.puzzle_hash,
-            amount: gobyCoinSpends[0].coin.amount
+            parentCoinInfo: highestCoinSpend.coin.parent_coin_info,
+            puzzleHash: highestCoinSpend.coin.puzzle_hash,
+            amount: highestCoinSpend.coin.amount
         });
         const gameWalletSmartCoin = new greenweb.SmartCoin({
             parentCoinInfo: gobySmartCoin.getName(),

@@ -57,9 +57,12 @@ class RPSDriver:
     async def syncHistoryGames(self):
         try:
             lastIndexSync = self.GameDatabase.getLastIndexSync()
+            print("Last index sync history", lastIndexSync)
             historyGames = await self.getHistoryGames(lastIndexSync)
+            print("Found history games", len(historyGames["historyGames"]))
             if historyGames["success"]:
                 for game in historyGames["historyGames"]:
+                    print("processing game", game["coin_id"])
                     gameF = (
                             game["parent_coin_info"],
                             game["coin_id"],
@@ -97,11 +100,12 @@ class RPSDriver:
     async def syncOpenGames(self):
         try:
             lastIndexSync = self.GameDatabase.getLastIndexSyncOpenGames()
+            print("Last index sync open games", lastIndexSync)
             openGames = await self.getOpenGames(lastIndexSync)
+            print("Found open games", len(openGames["openGames"]))
             if openGames["success"]:
                 for game in openGames["openGames"]:
-                    if self.GameDatabase.existsCoinIdAndIsUnspent(game["parent_coin_info"]) == True:
-                        self.GameDatabase.setSpentCoinId(game["parent_coin_info"])
+                    print("processing game", game["coin_id"])
                     gameF = (
                             game["parent_coin_info"],
                             game["coin_id"],
@@ -128,9 +132,9 @@ class RPSDriver:
                             "SPENT" if game["spent_block_index"] != 0 else "UNSPENT"
 
                         )
-                    if lastIndexSync < game["confirmed_block_index"]:
-                        self.GameDatabase.updateLastIndexSyncOpenGames(game["confirmed_block_index"])
-                        lastIndexSync = game["confirmed_block_index"]
+                    if lastIndexSync < game["oracleConfirmedBlockIndex"]:
+                        self.GameDatabase.updateLastIndexSyncOpenGames(game["oracleConfirmedBlockIndex"])
+                        lastIndexSync = game["oracleConfirmedBlockIndex"]
                     if self.GameDatabase.existsCoinId(game["coin_id"]) == True:
                         self.GameDatabase.deleteCoinId(game["coin_id"])
                     self.GameDatabase.insertGameData(gameF)
@@ -447,7 +451,7 @@ class RPSDriver:
                         'amount': gameCoin.coin.amount,
                         'coin_id': gameCoin.coin.name().hex(),
                         'confirmed_block_index': gameCoin.confirmed_block_index,
-                        'spent_block_index': coin.spent_block_index,
+                        'spent_block_index': gameCoin.spent_block_index,
                         'coinbase': gameCoin.coinbase,
                         'timestamp': gameCoin.timestamp,
                         'date': datetime.datetime.fromtimestamp(gameCoin.timestamp).strftime('%d %b %Y %H:%M') + " hrs",
@@ -572,7 +576,7 @@ class RPSDriver:
                         'stage': infoStage["stage"],
                         'publicKeyWinner': infoStage["publicKeyWinner"],
                         'stageName': infoStage["stageName"],
-                        'oracleConfirmedBlockIndex': gameCoin.confirmed_block_index,
+                        'oracleConfirmedBlockIndex': oracleCoin.confirmed_block_index,
                         'puzzleHash': infoStage["GameMod"].get_tree_hash().hex(),
                         'puzzleReveal': infoStage["GameMod"].__str__()
                     }
@@ -846,7 +850,11 @@ class RPSDriver:
             coin = await full_node_client.get_mempool_items_by_coin_name(bytes32.fromhex(coinId))
             if coin and coin['mempool_items']:
                 spend_bundle = coin['mempool_items'][0]['spend_bundle']
-                coin_spends = spend_bundle['coin_spends'][-1]
+                coin_spends = None
+                for coin_spend in spend_bundle['coin_spends']:
+                    if await self.calculateCoinId(coin_spend['coin']['parent_coin_info'], coin_spend['coin']['puzzle_hash'], coin_spend['coin']['amount']) == coinId:
+                        coin_spends = coin_spend
+                        break
                 
                 curriedParams = await self.getPuzzleRevealCurriedParams(Program.fromhex(coin_spends['puzzle_reveal']).uncurry()[1])
                 solutionParams = await self.getSolutionParams(Program.fromhex(coin_spends['solution']))

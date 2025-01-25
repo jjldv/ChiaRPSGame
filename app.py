@@ -20,12 +20,23 @@ async def syncHistoryGames():
     while True:
         start_time = time.time()
         try:
-            print("Initiating sync open games")
-            await Driver.syncOpenGames()
-            print("syncOpenGames executed successfully")
             print("Initiating sync history games")
             await Driver.syncHistoryGames()
             print("syncHistoryGames executed successfully")
+        except Exception as e:
+            print(f"Error during syncHistoryGames: {e}")
+            
+        # Calculate time elapsed and wait remaining time if any
+        elapsed = time.time() - start_time
+        wait_time = max(30 - elapsed, 0)
+        await asyncio.sleep(wait_time)
+async def syncOpenGames():
+    while True:
+        start_time = time.time()
+        try:
+            print("Initiating sync open games")
+            await Driver.syncOpenGames()
+            print("syncOpenGames executed successfully")
         except Exception as e:
             print(f"Error during syncHistoryGames: {e}")
             
@@ -37,6 +48,7 @@ async def syncHistoryGames():
 @app.on_event("startup")
 async def startup_event():
     asyncio.create_task(syncHistoryGames())
+    asyncio.create_task(syncOpenGames())
 
 #VIews
 @app.get("/.well-known/walletconnect.txt")
