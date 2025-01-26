@@ -138,7 +138,7 @@ body {
     margin-bottom: 20px;
 }
 
-.rps-option {
+.rps-option,.rps-option-reveal {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -148,11 +148,11 @@ body {
     transition: all 0.3s ease;
 }
 
-.rps-option:hover {
+.rps-option:hover,.rps-option-reveal:hover {
     background-color: rgba(255, 255, 255, 0.1);
 }
 
-.rps-option.selected {
+.rps-option.selected,.rps-option-reveal.selected {
     background-color: #e94560;
 }
 
