@@ -223,6 +223,27 @@ class Session {
             return { success: false, message: "Error creating solution" };
         }
     }
+    async createSolutionJoinPlayer2(selection, cashOutAddressHash, coinId) {
+        try {
+            const response = await fetch("/createSolutionJoinPlayer2", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ 
+                    pubkey: this.pubkey, 
+                    selection: selection, 
+                    cashOutAddressHash: cashOutAddressHash, 
+                    coinId: coinId, 
+                }),
+            });
+            const JsonResponse = await response.json();
+            return JsonResponse;
+        } catch (error) {
+            console.error(error);
+            return { success: false, message: "Error creating solution" };
+        }
+    }
     async pushTx(tx) {
         try {
             const response = await fetch("/pushTx", {
@@ -462,18 +483,20 @@ class Session {
             return { success: false, message: "Error opening game" };
         }
     }
-    async joinPlayer2(coinId,coinIdWallet,fee,selection,puzzleHashPlayer2,signature) {
+
+    async joinPlayer2(spendBundle,coinId,parentIdWallet,fee,selection,puzzleHashPlayer2,signature) {
         try {
             const response = await Utils.fetch(
                 "/joinPlayer2",
                 {
                     coinId: coinId,
-                    coinIdWallet: coinIdWallet,
+                    parentIdWallet: parentIdWallet,
                     pubkey: this.pubkey,
                     fee: fee,
                     selection: parseInt(selection),
                     puzzleHashPlayer2: puzzleHashPlayer2,
                     signature: signature,
+                    spendBundle: spendBundle,
                 },
                 true
             );

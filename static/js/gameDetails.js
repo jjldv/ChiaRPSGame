@@ -1,23 +1,53 @@
 let UserSession = new Session();
 const coinId = window.location.pathname.split("/").pop();
 let coinRecord;
-let IntervalTx;
+let IntervalTx = null;
 let GameAmount = 0;
+let selectedOption = null;
+//TODO: change name for LauncherGame to get the control of the games for the user
+let gameWalletInfo;
+let IntervalBalance = null;
 window.gamedetail = null;
 IS_MAINNET = null;
 UserSession.on("connected", async () => {
+    const netWorkInfo = await Utils.fetch("/getNetworkInfo");
+    IS_MAINNET = netWorkInfo.success && netWorkInfo.network_name === "mainnet";
+    gameWalletInfo = await UserSession.getWalletInfo();
     const feeOptions = [
         { fee: "0", time: -1 },
     ];
     console.log(UserSession.prefix);
-    const feeSelector = new FeeSelector(feeOptions, UserSession.prefix);
-    feeSelector.on("change", (data) => {
-        feeSpendbundle.value = data.value;
-    });
-    feeSelector.on("timerFinished", () => {
-        console.log("Temporizador terminado, actualizando tarifas...");
-        //TODO: UPDATE FEE
-    });
+    
+    
+
+    if (gamedetail?.spentBlockIndex == 0 && gamedetail.stage == 2  && gamedetail.publicKeyPlayer1 == UserSession.pubkey?.replace("0x","") ){
+        CloseGameContainer.style.display = "block";
+        const feeSelector = new FeeSelector(feeOptions, UserSession.prefix);
+        feeSelector.on("change", (data) => {
+            feeSpendbundle.value = data.value;
+        });
+        feeSelector.on("timerFinished", () => {
+            console.log("Temporizador terminado, actualizando tarifas...");
+            //TODO: UPDATE FEE
+        });
+    }
+
+    if (gamedetail?.spentBlockIndex == 0 && gamedetail.stage == 2 && UserSession.pubkey && UserSession.pubkey != gamedetail.publicKeyPlayer1){
+        JoinGameContainer.style.display = "block";
+        const feeSelectorJoin = new FeeSelector(feeOptions, UserSession.prefix,"feeSelectorContainerJoin");
+        feeSelectorJoin.on("change", (data) => {
+            feeSpendbundleJoin.value = data.value;
+        });
+        feeSelectorJoin.on("timerFinished", () => {
+            console.log("Temporizador terminado, actualizando tarifas...");
+        });
+        if(IntervalBalance == null){
+            setBalance();
+            IntervalBalance = setInterval(() => {
+                setBalance();
+            }, 30000);
+        }
+    }
     
 });
 document.addEventListener("DOMContentLoaded", async function () {
@@ -25,70 +55,12 @@ document.addEventListener("DOMContentLoaded", async function () {
     IS_MAINNET = netWorkInfo.success && netWorkInfo.network_name === "mainnet";
     coinID.innerHTML = coinId;
 
-    feeSpendbundleClaim.addEventListener("change", async () => {
-        await updateReceiveAmountClaim();
-        setCmdMessageSignatureClaim();
-    });
     await getGameDetails(true);
-    setPendingTransaction();
-    IntervalTx = setInterval(() => {
-        getGameDetails();
-        setPendingTransaction();
-    }, 30000);
-
-    coinIdSelect.addEventListener("change", async () => {
-        if(coinIdSelect.options[coinIdSelect.selectedIndex].dataset.amount < GameAmount)
-        {
-            Utils.displayToast("Insufficient funds");
-            coinIdSelect.value = "";
-            return;
-        }
-
-        await setFeeJoinPlayer2();
-        setCmdMessageSignatureJoin();
-    });
     
-    feeSpendbundleJoin.addEventListener("change", async () => {
-        await updateChangeAmount();
-        setCmdMessageSignatureJoin();
 
-    });
-    cashOutAddress.addEventListener("change", async () => {
-        setCmdMessageSignatureJoin();
-    });
-    RPSSelect.addEventListener("change", async () => {
-        setCmdMessageSignatureJoin();
-    });
-    RPSSelectReveal.addEventListener("change", async () => {
-        if(await checkCompromise()){
-            getFeeEstimateRevealSelectionPlayer1();
-        }
-    });
-    keyRPSReveal.addEventListener("change", async () => {
-        if(await checkCompromise()){
-            getFeeEstimateRevealSelectionPlayer1();
-        }
-    });
-    coinIdSelectReveal.addEventListener("change", async () => {
-        await getFeeEstimateRevealSelectionPlayer1();
-        setCmdMessageSignatureRevealFee();
-    });
-    feeSpendbundleReveal.addEventListener("change", async () => {
-        amountChangeCoinReveal.innerHTML = Utils.formatMojos(coinIdSelectReveal.options[coinIdSelectReveal.selectedIndex].dataset.amount - Utils.XCHToMojos(parseFloat(feeSpendbundleReveal.value)));
-        setCmdMessageSignatureRevealFee();
-    });
     
 });
-async function getFeeEstimateRevealSelectionPlayer1(){
-    if(coinIdSelectReveal.value == "" || RPSSelectReveal.value == "" || keyRPSReveal.value == "") {
-        feeSpendbundleReveal.value = "";
-        return;
-    }
-    const Rfee = await UserSession.getFeeEstimateRevealSelectionPlayer1(coinId,coinIdSelectReveal.value,parseInt(RPSSelectReveal.value),keyRPSReveal.value);
-    feeSpendbundleReveal.value = Utils.formatMojos(Rfee);
-    setCmdMessageSignatureRevealFee();
-    amountChangeCoinReveal.innerHTML = Utils.formatMojos(coinIdSelectReveal.options[coinIdSelectReveal.selectedIndex].dataset.amount - Rfee);
-}
+
 async function checkCompromise(){
     selectionRPSHashReveal.innerHTML = "----";
     if(RPSSelectReveal.value == "" || keyRPSReveal.value == ""){
@@ -110,21 +82,21 @@ async function updateReceiveAmount(){
 async function updateReceiveAmountClaim(){
     amountreceiveSpendbundleClaim.innerHTML = Utils.formatMojos(coinRecord.coin.amount - Utils.XCHToMojos(parseFloat(feeSpendbundleClaim.value)));
 }
-async function setFeeJoinPlayer2(){
-    if(coinIdSelect.value == ""){
-        return;
-    }
-    const Rfee = await UserSession.getFeeEstimateJoinPlayer2(coinId,coinIdSelect.value);
-    feeSpendbundleJoin.value = Utils.formatMojos(Rfee);
-    await updateChangeAmount();
-}
-async function updateChangeAmount(){
-    amountChangeCoin.innerHTML = Utils.formatMojos(coinIdSelect.options[coinIdSelect.selectedIndex].dataset.amount - (Utils.XCHToMojos(parseFloat(feeSpendbundleJoin.value)) + GameAmount));
-}
+
 async function getGameDetails(showSpinner = false){
     const RgameInfo = await Utils.getGameDetails(coinId,showSpinner);
     if (!RgameInfo.success){
         return;
+    }
+    checkPendingTransaction();
+    if ( RgameInfo.game.spentBlockIndex != 0){
+        clearInterval(IntervalTx);
+    }
+    if (RgameInfo.game.spentBlockIndex == 0 && IntervalTx == null){
+        IntervalTx = setInterval(() => {
+            getGameDetails();
+            checkPendingTransaction();
+        }, 30000);
     }
     window.gamedetail = RgameInfo.game;
     GameAmount = RgameInfo.game.gameAmount;
@@ -132,6 +104,9 @@ async function getGameDetails(showSpinner = false){
     const formattedDate = date.toLocaleString();
     coinDate.innerHTML = formattedDate;
     coinAmount.innerHTML = Utils.formatMojosPrefix(GameAmount,IS_MAINNET);
+    document.querySelectorAll('.coinAmount').forEach(element => {
+        element.innerHTML = Utils.formatMojosPrefix(GameAmount, IS_MAINNET);
+    });
     publicKeyPlayer1.innerHTML = `<a href="/userHistoryGames/${gamedetail.publicKeyPlayer1}">${gamedetail.publicKeyPlayer1}</a>`;
     compromisePlayer1.innerHTML = gamedetail.compromisePlayer1;
     publicKeyPlayer2.innerHTML = gamedetail.publicKeyPlayer2 !="----" ? `<a href="/userHistoryGames/${gamedetail.publicKeyPlayer2}">${gamedetail.publicKeyPlayer2}</a>` : gamedetail.publicKeyPlayer2;
@@ -166,11 +141,7 @@ async function getGameDetails(showSpinner = false){
     }
     if (gamedetail.spentBlockIndex == 0 && gamedetail.stage == 2  && gamedetail.publicKeyPlayer1 == UserSession.pubkey?.replace("0x","") ){
         CloseGameContainer.style.display = "block";
-        setBalance();
-        setInterval(() => {
-            setBalance();
-        }, 30000);
-        return;
+        
     }
     //Reveal Player 1
     if (gamedetail.spent_block_index == 0 && gamedetail.stage == 3 && UserSession.pubkey && UserSession.pubkey == gamedetail.publicKeyPlayer1){
@@ -178,78 +149,20 @@ async function getGameDetails(showSpinner = false){
         RevealGameContainer.style.display = "block";
     }
     //Join Player 2
-    if (gamedetail.spent_block_index == 0 && gamedetail.stage == 2 && UserSession.pubkey && UserSession.pubkey != gamedetail.publicKeyPlayer1){
+    if (gamedetail.spentBlockIndex == 0 && gamedetail.stage == 2 && UserSession.pubkey && UserSession.pubkey != gamedetail.publicKeyPlayer1){
         JoinGameContainer.style.display = "block";
-        if(feeSpendbundleJoin.value == "0" || feeSpendbundleJoin.value == ""){
-            cashOutAddress.value = UserSession.cashOutAddress??"";
-            getBalance();
-            gameAmount.innerHTML = Utils.formatMojosPrefix(gamedetail.coin.amount,IS_MAINNET);
+        if(IntervalBalance == null){
+            setBalance();
+            IntervalBalance = setInterval(() => {
+                setBalance();
+            }, 30000);
         }
     }
 }
-async function setFeeClaimGame(){
-    const Rfee = await UserSession.getFeeEstimateClaimGame(coinId);
-    feeSpendbundleClaim.value = Utils.formatMojos(Rfee);
-    amountreceiveSpendbundleClaim.innerHTML = Utils.formatMojos(coinRecord.coin.amount - Rfee)
-    setCmdMessageSignatureClaim();
-}
-async function setCmdMessageSignatureClaim(){
-    didCmdMessageSingatureClaim.innerHTML = "";
-    signatureSpendbundleClaim.value = "";
-    const walletAddressPuzzleHash = puzzleHashPlayer1.innerHTML;
-    const concatMessage2Sign = await UserSession.concat([5,parseInt(Utils.XCHToMojos(parseFloat(feeSpendbundleClaim.value)))]);
-    const sha256Message = await UserSession.sha256Hex(concatMessage2Sign);
-    if (!sha256Message) {
-        Utils.displayToast("Error sha256");
-        return;
-    }
-    let message = `${sha256Message}${coinId}${UserSession.genesisChallenge}`;
-    didCmdMessageSingatureClaim.innerHTML = message;
-    
-}
 
-async function setCmdMessageSignature(){
-    didCmdMessageSingature.innerHTML = "";
-    signatureSpendbundle.value = "";
-    const walletAddressPuzzleHash = puzzleHashPlayer1.innerHTML;
-    const concatMessage2Sign = await UserSession.concat([3,parseInt(Utils.XCHToMojos(parseFloat(feeSpendbundle.value))), "0x"+ walletAddressPuzzleHash]);
-    const sha256Message = await UserSession.sha256Hex(concatMessage2Sign);
-    if (!sha256Message) {
-        Utils.displayToast("Error sha256");
-        return;
-    }
-    let message = `${sha256Message}${coinId}${UserSession.genesisChallenge}`;
-    didCmdMessageSingature.innerHTML = message;
-    
-}
-async function setCmdMessageSignatureJoin(){
-    didCmdMessageSingatureJoin.innerHTML = "";
-    signatureSpendbundleJoin.value = "";
-    if(coinIdSelect.value == "" || cashOutAddress.value == "" || feeSpendbundleJoin.value == "" || RPSSelect.value == ""){
-        return;
-    }
-    const walletAddress = cashOutAddress.value;
-    let walletAddressPuzzleHash = await Utils.convertAddressToPuzzleHash(
-        walletAddress
-    );
-    if(walletAddressPuzzleHash == null){
-        Utils.displayToast("Invalid wallet address");
-        return;
-    }
-    UserSession.setCashOutAddress(cashOutAddress.value);
-    const betAmount = 0;
-    const actionCashOut = 0;
-   
-    const oraclePuzzleHash = UserSession.oraclePuzzleHash;
-    const concatMessage2Sign = await UserSession.concat([2,GameAmount,parseInt(Utils.XCHToMojos(parseFloat(feeSpendbundleJoin.value))), "0x"+ gamePuzzleHash.innerHTML,parseInt(RPSSelect.value), "0x"+ walletAddressPuzzleHash, "0x"+ oraclePuzzleHash]);
-    const sha256Message = await UserSession.sha256Hex(concatMessage2Sign);
-    if (!sha256Message) {
-        Utils.displayToast("Error setting the sha256 to message to sign", "error");
-        return;
-    }
-    let message = `${sha256Message}${coinIdSelect.value}${UserSession.genesisChallenge}`;
-    didCmdMessageSingatureJoin.innerHTML = message;
-}
+
+
+
 async function closeGame(){
     
     try {
@@ -297,98 +210,116 @@ async function closeGame(){
         }
         Utils.displayToast("Transaction sent successfully");
         feeSpendbundle.value = "0";
-        setPendingTransaction();
+        checkPendingTransaction();
         return true;
     } catch (error) {
         console.error("Error in close game:", error);
         return false;
     }
 }
-async function getBalance() {
-    let walletBalanceInfo = await UserSession.getWalletBalance();
-    if (walletBalanceInfo.success) {
-        let coinSelectElements = document.querySelectorAll('.coinIdSelect');
-        let firstCoinSelect = coinSelectElements[0];
-        
-        let existingCoins = Array.from(firstCoinSelect.options).map((option) => option.value);
-        
-        walletBalanceInfo.coins.forEach((coin) => {
-            if (!existingCoins.includes(coin.coin_id) && coin.amount > 0) {
-                let option = document.createElement("option");
-                option.value = coin.coin_id;
-                option.dataset.amount = coin.amount;
-                option.text = Utils.formatMojosPrefix(coin.amount, IS_MAINNET) + " - Coin ID: " + coin.coin_id;
 
-                coinSelectElements.forEach((select) => {
-                    select.appendChild(option.cloneNode(true));
-                });
-            }
-        });
-
-        coinSelectElements.forEach((select) => {
-            Array.from(select.options).forEach((option) => {
-                if (!walletBalanceInfo.coins.some((coin) => coin.coin_id === option.value) && option.value !== "") {
-                    console.log("Removing coin from select: ", option.value);
-                    select.removeChild(option);
-                }
-            });
-
-            let selectedCoinId = select.value;
-            if (!walletBalanceInfo.coins.some((coin) => coin.coin_id === selectedCoinId)) {
-                select.value = "";
-            } else {
-                select.value = selectedCoinId;
-            }
-        });
-    }
-}
 
 async function joinPlayer2(){
-    if(coinIdSelect.value == ""){
-        Utils.displayToast("Select a coin to join the game");
-        return;
-    }
-    if(RPSSelect.value == ""){
-        Utils.displayToast("Select  Rock,Paper or Scissors");
+    if(selectedOption == null){
+        Utils.displayToast("Select a Rock,Paper or Scissors");
         return;
     }
     if(feeSpendbundleJoin.value == ""){
         Utils.displayToast("Enter a fee to join the game");
         return;
     }
-    if(cashOutAddress.value == ""){
-        Utils.displayToast("Enter a wallet address to cash out if you win");
-        return;
-    }
-    if(signatureSpendbundleJoin.value == ""){
-        Utils.displayToast("Enter the signature to join the game");
-        return;
-    }
-    let walletAddressPuzzleHash = await Utils.convertAddressToPuzzleHash(cashOutAddress.value);
-    const RjoinPlayer2 = await UserSession.joinPlayer2(coinId,coinIdSelect.value, Utils.XCHToMojos(parseFloat(feeSpendbundleJoin.value)),RPSSelect.value,walletAddressPuzzleHash, signatureSpendbundleJoin.value);
-    if (RjoinPlayer2.message){
-        Utils.displayToast(RjoinPlayer2.message);
-    }
-    signatureSpendbundleJoin.value = "";   
-    feeSpendbundleJoin.value = "";
-    if(RjoinPlayer2.success){
-        setPendingTransaction();
-    }
-}
-async function setCmdMessageSignatureReveal(){
-    if(RPSSelectReveal.value == "" || keyRPSReveal.value == ""){
-        return;
-    }
-    const concatMessage2Sign = await UserSession.concat([4,parseInt(RPSSelectReveal.value), keyRPSReveal.value]);
-    const sha256Message = await UserSession.sha256Hex(concatMessage2Sign);
-    if (!sha256Message) {
-        Utils.displayToast("Error setting the sha256 to message to sign", "error");
-        return;
-    }
-    let message = `${sha256Message}${coinId}${UserSession.genesisChallenge}`;
-    didCmdMessageSingatureReveal.innerHTML = message;
-}
+    
+    try {
+        let betAmount = GameAmount;
+        let fee = Utils.XCHToMojos(parseFloat(feeSpendbundleJoin.value));
+        let cashOutAddressHash = UserSession.walletPuzzleHash;
+        const totalRequired = BigInt(betAmount) + BigInt(fee);
+        console.log("Total required:", totalRequired.toString());
+        let gameWalletPuzzleHash = gameWalletInfo.wallet_puzzle_hash;
+        let changePuzzleHash = cashOutAddressHash;
+        const { selectedCoins, totalSelected, change } =
+            await UserSession.Goby.selectCoins(totalRequired);
+        const gobyCoinSpends = await UserSession.Goby.createStandarCoinSpends(
+            selectedCoins,
+            gameWalletPuzzleHash,
+            betAmount,
+            changePuzzleHash,
+            change,
+            fee
+        );
+        gobyCoinSpends.sort((a, b) => a.coin.amount - b.coin.amount);
 
+        const highestCoinSpend = gobyCoinSpends[gobyCoinSpends.length - 1];
+
+        const gobySmartCoin = new greenweb.SmartCoin({
+            parentCoinInfo: highestCoinSpend.coin.parent_coin_info,
+            puzzleHash: highestCoinSpend.coin.puzzle_hash,
+            amount: highestCoinSpend.coin.amount
+        });
+        const gameWalletSmartCoin = new greenweb.SmartCoin({
+            parentCoinInfo: gobySmartCoin.getName(),
+            puzzleHash: gameWalletPuzzleHash,
+            amount: betAmount
+        });
+       
+        let solutionJoinPlayer2 = await UserSession.createSolutionJoinPlayer2(selectedOption, cashOutAddressHash, coinId);
+        const gameWalletCoinSpend = {
+            coin: {
+                // Añadir el objeto coin dentro de una propiedad coin
+                parent_coin_info: "0x" + gameWalletSmartCoin.parentCoinInfo,
+                puzzle_hash: "0x" + gameWalletInfo.wallet_puzzle_hash,
+                amount: betAmount
+            },
+            puzzle_reveal: gameWalletInfo.wallet_puzzle_reveal,
+            solution: solutionJoinPlayer2.solutionGameWallet
+        };
+
+        const gameWalletCoinId = gameWalletSmartCoin.getName();
+        const gameSmartCoin = new greenweb.SmartCoin({
+            parentCoinInfo: gameWalletCoinId,
+            puzzleHash: gameWalletInfo.game_puzzle_hash,
+            amount: betAmount
+        });
+        const gameCoinId = gameSmartCoin.getName();
+        const gameCoinSpend = {
+            coin: {
+                parent_coin_info: "0x" + gamedetail.parentCoinId,
+                puzzle_hash: "0x" + gamedetail.puzzleHash,
+                amount: betAmount
+            },
+            puzzle_reveal: gamedetail.puzzleReveal,
+            solution: solutionJoinPlayer2.solutionGame
+        };
+        const allCoinSpends = [
+            ...gobyCoinSpends,
+            gameWalletCoinSpend,
+            gameCoinSpend
+        ];
+        let signature = await UserSession.Goby.signCoinSpends(allCoinSpends);
+
+        let spendBundle = {
+            coin_spends: allCoinSpends,
+            aggregated_signature: [signature]
+        };
+        // let GobyTx = await UserSession.Goby.sendTransaction(spendBundle);
+        // console.log("GobyTx:", GobyTx);
+        let ServerTx = await UserSession.joinPlayer2(spendBundle,coinId,gobySmartCoin.getName(),0,selectedOption,cashOutAddressHash,signature);
+        console.log("ServerTx:", ServerTx);
+        if (!ServerTx.success) {
+            Utils.displayToast("Error sending transaction");
+            return false;
+        }
+        Utils.displayToast("Transaction sent successfully, waiting for confirmation");
+        feeSpendbundleJoin.value = "0";
+
+
+        checkPendingTransaction();
+        return true;
+    } catch (error) {
+        console.error("Error in joinPlayer1FromGoby:", error);
+        return false;
+    }
+}
 
 async function revealSelectionPlayer1(){
     if(RPSSelectReveal.value == "" || keyRPSReveal.value == "" || signatureSpendbundleReveal.value == ""){
@@ -415,7 +346,7 @@ async function revealSelectionPlayer1(){
         Utils.displayToast(RrevealSelectionPlayer1.message);
     }
     if(RrevealSelectionPlayer1.success){
-        setPendingTransaction();
+        checkPendingTransaction();
     }
     if(RrevealSelectionPlayer1.success){
         RPSSelectReveal.value = "";
@@ -434,9 +365,7 @@ async function claimGame(){
     if (RclaimGame.message){
         Utils.displayToast(RclaimGame.message);
     }
-    if(RclaimGame.success){
-        setPendingTransaction();
-    }
+    
     signatureSpendbundleClaim.value = "";
     feeSpendbundleClaim.value = "";
 }
@@ -449,7 +378,7 @@ async function setBalance() {
         );
     });
 }
-async function setPendingTransaction() {
+async function checkPendingTransaction() {
     let coinId = window.location.pathname.split("/").pop();
     const pendingTransactionsContainer = document.getElementById('pendingTransactions');
     const existingCard = document.getElementById(`card-${coinId}`);
@@ -510,10 +439,12 @@ async function setPendingTransaction() {
         return; // No necesitamos seguir monitoreando
     }
 
-    // Si todavía hay transacción pendiente, continuar monitoreando
-    if (Response.pendingTransaction && Response.pendingTransaction.length > 0) {
-        setTimeout(() => {
-            setPendingTransaction();
-        }, 5000);
-    }
+
+}
+function selectOption(value, element) {
+    document
+        .querySelectorAll(".rps-option")
+        .forEach((el) => el.classList.remove("selected"));
+    element.classList.add("selected");
+    selectedOption = value;
 }

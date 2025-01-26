@@ -234,12 +234,13 @@ async def joinPlayer2(request: Request):
         data = await request.json()
         pubkey = data['pubkey'].replace("0x", "")
         coinId = data['coinId']
-        coinIdWallet = data['coinIdWallet']
+        parentIdWallet = data['parentIdWallet']
         fee = data['fee']
         selection = data['selection']
         puzzleHashPlayer2 = data['puzzleHashPlayer2']
         signature = data['signature']
-        response = await Driver.joinPlayer2(pubkey, coinId, coinIdWallet, fee, selection, puzzleHashPlayer2, signature)
+        spendBundle = Driver.convertJsonToSpendBundle(data['spendBundle'])
+        response = await Driver.joinPlayer2(spendBundle,pubkey, coinId, parentIdWallet, fee, selection, puzzleHashPlayer2, signature)
         return JSONResponse(content=response)
     except Exception as e:
         return JSONResponse(content={"success": False, "message": str(e)})
@@ -397,6 +398,18 @@ async def createSolutionJoinPlayer1(request: Request):
         selectionHash = data['selectionHash']
         cashOutAddressHash = data['cashOutAddressHash']
         response = await Driver.createSolutionJoinPlayer1(publicKeyPlayer1,amount,selectionHash,cashOutAddressHash)
+        return JSONResponse(content=response)
+    except Exception as e:
+        return JSONResponse(content={"success": False, "message": str(e)})
+@app.post("/createSolutionJoinPlayer2")
+async def createSolutionJoinPlayer2(request: Request):
+    try:
+        data = await request.json()
+        publicKeyPlayer2 = data['pubkey'].replace("0x", "")
+        selection = data['selection']
+        cashOutAddressHash = data['cashOutAddressHash']
+        coinId = data['coinId']
+        response = await Driver.createSolutionJoinPlayer2(publicKeyPlayer2,coinId,selection,cashOutAddressHash)
         return JSONResponse(content=response)
     except Exception as e:
         return JSONResponse(content={"success": False, "message": str(e)})

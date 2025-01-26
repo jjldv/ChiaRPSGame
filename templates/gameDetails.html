@@ -148,57 +148,46 @@
                             <i class="fas fa-money-bill"></i> Close Game
                         </button>
                     </div>
-                    <div id="JoinGameContainer" style="text-align: center; border-style: solid; padding: 10px;display: none;">
-                        <h3>Join Game</h3>
-                        <div class="coin-select form-group">
-                            <label for="coinIdSelect">Select a coin to Join Game:</label>
-                            <select id="coinIdSelect" class="form-select coinIdSelect">
-                                <option value="">Select a coin to Join game</option>
-                            </select>
+                    <div id="JoinGameContainer" style="text-align: center; border-style: solid; padding: 10px; display: none;">
+                        <h3 class="text-center mb-3">Join Game</h3>
+                        <i class="fas fa-wallet fa-3x mb-3"></i>
+                        <h3 class="walletBalance">----</h3>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="betAmount">Bet Amount</label>
+                                    <h3><p class="coinAmount">----</p></h3>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="feeSelector">Network Fee</label>
+                                    <div id="feeSelectorContainerJoin"></div>
+                                    <input type="number" class="form-control" id="feeSpendbundleJoin" value="0" min="0.000000000001" step="0.000000000001" style="display: none;">
+                                </div>
+                            </div>
+                            <div class="mt-2" id="balanceValidationMessage"></div>
                         </div>
-                        <div class="form-group">
-                            <label for="feeSpendbundleJoin">Calculated Fee for 60 seconds:</label>
-                            <input type="number" class="form-control" id="feeSpendbundleJoin"  value="0" min="0.000000000001" step="0.000000000001">
+                        
+                        <div class="form-group mb-3">
+                            <label style="text-align: center;width: 100%;">Your Selection:</label>
+                            <div class="rps-selection">
+                                <div class="rps-option" onclick="selectOption(1, this)" id="rock-option" data-value="1">
+                                    <span class="rps-icon">🪨</span>
+                                    <span class="rps-label">Rock</span>
+                                </div>
+                                <div class="rps-option" onclick="selectOption(2, this)" id="paper-option" data-value="2">
+                                    <span class="rps-icon">📄</span>
+                                    <span class="rps-label">Paper</span>
+                                </div>
+                                <div class="rps-option" onclick="selectOption(3, this)" id="scissors-option" data-value="3">
+                                    <span class="rps-icon">✂️</span>
+                                    <span class="rps-label">Scissors</span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label for="betAmount">Bet Amount:</label>
-                            <p id="gameAmount">----</p>
-                        </div>
-                        <div class="form-group">
-                            <label for="amountChangeCoin">Change to Wallet Coin:</label>
-                            <p id="amountChangeCoin">----</p>
-                        </div>
-                        <div class="form-group">
-                            <label for="RPSSelect">Select 🪨 📄 or ✂️:</label>
-                            <select id="RPSSelect" class="form-select">
-                                <option value="">Choose your option</option>
-                                <option value="1">🪨 Rock</option>
-                                <option value="2">📄 Paper</option>
-                                <option value="3">✂️ Scissors</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="cashOutAddress">Cash Out Address:</label>
-                            <input type="text" class="form-control" id="cashOutAddress"   >
-                        </div>
-                        <div class="form-group position-relative">
-                            <label class="customLabel">Sign the message to add the spendbundle</label>
-                            <p>You are signing:</p>
-                            <p style="overflow-x: auto;margin-top: -20px !important;">actionJoinP2(2)+betAmount+fee+OpenGameHash+selection+walletPlayerHash+playerOracleHash+CoinId+GenesisChallenge</p>
-                            <pre class="precustom"><code id="cmdSingByDIDJoin" >chia rpc wallet sign_message_by_id '{"id":"<span id="didCmdSingatureJoin"></span>","message":"<span id="didCmdMessageSingatureJoin"></span>","is_hex":"True","safe_mode":"False"}'</code>
-                            </pre>
-                            <button type="button" class="btn position-absolute copy-btn" style="top: 74px; "
-                                onclick="Utils.copyToClipboard('#cmdSingByDIDJoin')">
-                                <i class="fas fa-copy"></i>
-                            </button>
-                        </div>
-                        <div class="form-group">
-                            <label for="signatureSpendbundleJoin">Signature:</label>
-                            <input type="text" class="form-control" id="signatureSpendbundleJoin" placeholder="Enter the signature">
-                        </div>
-                        <br>
-                        <button  class="btn btn-primary btn-lg" onclick="joinPlayer2()">
-                            <i class="fas fa-money-bill"></i> Join Game
+                        <button class="btn btn-primary btn-lg w-100" onclick="joinPlayer2()">
+                            <i class="fas fa-play-circle"></i> Join Game
                         </button>
                     </div>
                     

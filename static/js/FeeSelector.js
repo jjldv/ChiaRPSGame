@@ -1,6 +1,7 @@
 class FeeSelector {
     constructor(feeOptions, currencyCode ,containerId = 'feeSelectorContainer') {
         this.feeOptions = feeOptions;
+        this.id = Math.random().toString(36).substr(2, 9);
         this.currencyCode = currencyCode.toUpperCase();
         this.container = document.getElementById(containerId);
         this.selectedValue = feeOptions[0].fee;
@@ -24,6 +25,7 @@ class FeeSelector {
             <div class="fee-selector-wrapper">
                 <div class="fee-select-container">
                     <select id="feeSelect" name="fee">
+                        id="${this.id}_feeSelect"
                         ${this.feeOptions.map(option => `
                             <option value="${option.fee}" data-time="${option.time}">
                                 ${option.fee} ${this.currencyCode} - ${option.time === -1 ? '(>5 min)' : `(~${option.time} min)`}

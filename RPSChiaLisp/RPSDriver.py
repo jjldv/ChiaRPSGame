@@ -294,40 +294,27 @@ class RPSDriver:
             return {"success": True, "message": "", "solutionGameWallet": SerializedProgram.from_program(solution).to_bytes().hex(),"solutionGame": SerializedProgram.from_program(solutionOpenGame).to_bytes().hex()}
         except Exception as e:
             return {"success": False, "message": str(e)}
-    async def createSpendJoinPlayer2(self, publicKeyP2Hex:str, coinId:str,coinIdWallet:str, fee:int, selection:int, cashOutAddressHash:str):
+    async def createSolutionJoinPlayer2(self, publicKeyP2Hex:str, coinId:str, selection:int, cashOutAddressHash:str):
         try:
 
             gameCoin = await self.getCoinRecord(coinId)
             publicKeyPlayer2 = G1Element.from_bytes(bytes.fromhex(publicKeyP2Hex))
             WalletPlayerMod = self.GAME_WALLET_MOD.curry(publicKeyPlayer2)
             player2OracleMod = self.PLAYER_ORACLE_MOD.curry(self.SERVER_GAME_PUBLIC_KEY,publicKeyPlayer2,self.GAME_MOD.get_tree_hash())
-            coinWallet = await self.getCoin(coinIdWallet)
             solutionWallet = Program.to([
                 self.ACTION_JOIN_PLAYER2,
-                coinWallet.puzzle_hash, 
-                coinWallet.amount,
-                fee, 
+                WalletPlayerMod.get_tree_hash(), 
+                gameCoin.coin.amount,
+                0, 
                 gameCoin.coin.puzzle_hash, 
                 gameCoin.coin.amount,
                 selection,
                 bytes.fromhex(cashOutAddressHash),
                 player2OracleMod.get_tree_hash()])
-            spendWallet = CoinSpend(
-                coinWallet,
-                SerializedProgram.from_program(WalletPlayerMod),
-                SerializedProgram.from_program(solutionWallet)
-            )
-
-            puzzleAndSolution = await self.getPuzzleAndSolution(gameCoin.coin.parent_coin_info.hex(), gameCoin.confirmed_block_index)
-            infoSolutionParams = await self.getSolutionParams(puzzleAndSolution.solution.to_program())
-            infoStage = await self.getGameStageParsed(puzzleAndSolution.puzzle_reveal.to_program().uncurry()[1],infoSolutionParams["params"])
-            gameParams = await self.getGameParams(infoStage["stage"],infoStage["curriedParams"],infoSolutionParams["params"])
-            publicOracleCoin,player1OracleCoin,player2OracleCoin = await self.getGameOracleCoins(gameCoin,std_hash(infoStage["GameMod"].get_tree_hash()).hex(),gameParams["publicKeyPlayer1"])
-
-            player2WalletMod = self.GAME_WALLET_MOD.curry(publicKeyPlayer2)
+           
                 
             solutionGame = Program.to([
-                    player2WalletMod.get_tree_hash(),
+                    WalletPlayerMod.get_tree_hash(),
                     publicKeyPlayer2,
                     selection,
                     bytes.fromhex(cashOutAddressHash),
@@ -336,12 +323,63 @@ class RPSDriver:
                     0,
                     self.ACTION_JOIN_PLAYER2,
                     gameCoin.coin.amount,
-                    fee])
-            spendGame = CoinSpend(
-                gameCoin.coin,
-                SerializedProgram.from_program(infoStage["GameMod"]),
-                SerializedProgram.from_program(solutionGame)
-            )
+                    0])
+            
+            return {"success": True, "message": "", "solutionGameWallet": SerializedProgram.from_program(solutionWallet).to_bytes().hex(),"solutionGame": SerializedProgram.from_program(solutionGame).to_bytes().hex()}
+        except Exception as e:
+            print("Error creating spend open game", e)
+            raise e
+    async def createSpendJoinPlayer2(self, publicKeyP2Hex:str, coinId:str,parentIdWallet:str, fee:int, selection:int, cashOutAddressHash:str):
+        try:
+            gameCoin = await self.getCoinRecord(coinId)
+            # publicKeyPlayer2 = G1Element.from_bytes(bytes.fromhex(publicKeyP2Hex))
+            # WalletPlayerMod = self.GAME_WALLET_MOD.curry(publicKeyPlayer2)
+            # player2OracleMod = self.PLAYER_ORACLE_MOD.curry(self.SERVER_GAME_PUBLIC_KEY,publicKeyPlayer2,self.GAME_MOD.get_tree_hash())
+            # coinWallet = Coin(
+            #     bytes32.fromhex(parentIdWallet),
+            #     WalletPlayerMod.get_tree_hash(),
+            #     uint64(gameCoin.coin.amount)
+            # )
+            # solutionWallet = Program.to([
+            #     self.ACTION_JOIN_PLAYER2,
+            #     WalletPlayerMod.get_tree_hash(), 
+            #     gameCoin.coin.amount,
+            #     fee, 
+            #     gameCoin.coin.puzzle_hash, 
+            #     gameCoin.coin.amount,
+            #     selection,
+            #     bytes.fromhex(cashOutAddressHash),
+            #     player2OracleMod.get_tree_hash()])
+            # spendWallet = CoinSpend(
+            #     coinWallet,
+            #     SerializedProgram.from_program(WalletPlayerMod),
+            #     SerializedProgram.from_program(solutionWallet)
+            # )
+
+            puzzleAndSolution = await self.getPuzzleAndSolution(gameCoin.coin.parent_coin_info.hex(), gameCoin.confirmed_block_index)
+            infoSolutionParams = await self.getSolutionParams(puzzleAndSolution.solution.to_program())
+            infoStage = await self.getGameStageParsed(puzzleAndSolution.puzzle_reveal.to_program().uncurry()[1],infoSolutionParams["params"])
+            gameParams = await self.getGameParams(infoStage["stage"],infoStage["curriedParams"],infoSolutionParams["params"])
+            publicOracleCoin,player1OracleCoin,player2OracleCoin = await self.getGameOracleCoins(gameCoin,std_hash(infoStage["GameMod"].get_tree_hash()).hex(),gameParams["publicKeyPlayer1"])
+
+            # player2WalletMod = self.GAME_WALLET_MOD.curry(publicKeyPlayer2)
+                
+            # solutionGame = Program.to([
+            #         player2WalletMod.get_tree_hash(),
+            #         publicKeyPlayer2,
+            #         selection,
+            #         bytes.fromhex(cashOutAddressHash),
+            #         player2OracleMod.get_tree_hash(),
+            #         0,
+            #         0,
+            #         self.ACTION_JOIN_PLAYER2,
+            #         gameCoin.coin.amount,
+            #         fee])
+            # spendGame = CoinSpend(
+            #     gameCoin.coin,
+            #     SerializedProgram.from_program(infoStage["GameMod"]),
+            #     SerializedProgram.from_program(solutionGame)
+            # )
             publicOracleMod = self.PUBLIC_ORACLE_MOD.curry(self.SERVER_GAME_PUBLIC_KEY,self.GAME_MOD.get_tree_hash())
             solutionPublicOracle = Program.to([gameCoin.coin.name()])
             spendPublicOracle = CoinSpend(
@@ -356,33 +394,34 @@ class RPSDriver:
                 SerializedProgram.from_program(player1OracleMod),
                 SerializedProgram.from_program(solutionPlayerOracle)
             )
-            return [spendWallet,spendGame,spendPublicOracle,spendPlayerOracle]
+            return [spendPublicOracle,spendPlayerOracle]
         except Exception as e:
             print("Error creating spend open game", e)
             raise e
-    async def joinPlayer2(self,publicKeyP2Hex:str, coinId:str,coinIdWallet:str, fee:int, selection:str, cashOutAddressHash:str, signature:str):
+    async def joinPlayer2(self,spendBundle,publicKeyP2Hex:str, coinId:str,parentIdWallet:str, fee:int, selection:str, cashOutAddressHash:str, signature:str):
         try:
-            spend = await self.createSpendJoinPlayer2(publicKeyP2Hex, coinId,coinIdWallet, fee, selection, cashOutAddressHash)
-            gameCoin = spend[1].coin
-            publicOracleCoin = spend[2].coin
-            playerOracleCoin = spend[3].coin
+            spend = await self.createSpendJoinPlayer2(publicKeyP2Hex, coinId,parentIdWallet, fee, selection, cashOutAddressHash)
+            fullSpendBundle = spend + spendBundle.coin_spends
+            #gameCoin = spend[1].coin
+            publicOracleCoin = spend[-2].coin
+            playerOracleCoin = spend[-1].coin
 
             signature_bytes = bytes.fromhex(signature)
             signatureP2 = G2Element.from_bytes(signature_bytes)
 
             signServerPublic: G2Element = AugSchemeMPL.sign(self.SERVER_GAME_PRIVATE_KEY,
-                            std_hash(gameCoin.name())
+                            std_hash(bytes.fromhex(coinId))
                             + publicOracleCoin.name()
                             + self.GENESIS_CHALLENGE
                         )
             signServerPlayer1: G2Element = AugSchemeMPL.sign(self.SERVER_GAME_PRIVATE_KEY,
-                            std_hash(gameCoin.name())
+                            std_hash(bytes.fromhex(coinId))
                             + playerOracleCoin.name()
                             + self.GENESIS_CHALLENGE
                         )
             signaturaGame = G2Element()
             aggregated_signature = AugSchemeMPL.aggregate([signatureP2, signServerPublic,signServerPlayer1,signaturaGame])
-            spend_bundle = SpendBundle(spend, aggregated_signature)
+            spend_bundle = SpendBundle(fullSpendBundle, aggregated_signature)
             status = await self.pushTx(spend_bundle)
             if status["success"] == False:
                 return {"success": False, "message": self.parseError(status["message"])}
