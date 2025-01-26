@@ -176,74 +176,43 @@
                         </button>
                     </div>
                     
-                    <div id="RevealGameContainer" style="text-align: center; border-style: solid; padding: 10px;display: none;">
-                        <h3>Reveal Selection</h3>
-                        <div class="form-group">
-                            <label for="RPSSelectReveal">Select 🪨 📄 or ✂️:</label>
-                            <select id="RPSSelectReveal" class="form-select">
-                                <option value="">Choose your option</option>
-                                <option value="1">🪨 Rock</option>
-                                <option value="2">📄 Paper</option>
-                                <option value="3">✂️ Scissors</option>
-                            </select>
+                    <div id="RevealGameContainer" style="text-align: center; border-style: solid; padding: 10px; display: none;">
+                        <h3 class="text-center mb-3">Reveal your selection</h3>
+                        <div class="form-group mb-3" id="jsonFileContainer" style="display: none;">
+                            <label for="jsonFile">Select your JSON file:</label>
+                            <div class="d-flex align-items-center justify-content-center">
+                                <span id="jsonFileName" class="truncate wallet-address" title="Click to copy" style="font-size: 10px;">----</span>
+                                <i class="fas fa-copy copy-icon" onclick="Utils.copyToClipboard('#jsonFileName')"></i>
+                            </div>
+                            <input type="file" class="form-control" id="jsonFile" accept=".json" onchange="handleFileUploadReveal(event)">
                         </div>
-                        <div class="form-group">
-                            <label for="keyRPSReveal" title="">Set your key used in the game:</label>
-                            <input type="text" class="form-control" id="keyRPSReveal" placeholder="Enter your key.. ex: MiKeySecure">
+                        <div class="form-group mb-3">
+                            <label style="text-align: center;width: 100%;">Your Selection:</label>
+                            <div class="rps-selection">
+                                <div class="rps-option-reveal" onclick="selectOptionReveal(1, this)" id="rock-option-reveal" data-value="1">
+                                    <span class="rps-icon">🪨</span>
+                                    <span class="rps-label">Rock</span>
+                                </div>
+                                <div class="rps-option-reveal" onclick="selectOptionReveal(2, this)" id="paper-option-reveal" data-value="2">
+                                    <span class="rps-icon">📄</span>
+                                    <span class="rps-label">Paper</span>
+                                </div>
+                                <div class="rps-option-reveal" onclick="selectOptionReveal(3, this)" id="scissors-option-reveal" data-value="3">
+                                    <span class="rps-icon">✂️</span>
+                                    <span class="rps-label">Scissors</span>
+                                </div>
+                            </div>
+                            <input type="hidden" id="selectedOptionReveal" name="selectedOptionReveal">
                         </div>
-                        <div class="form-group">
-                            <label for="selectionRPSHashReveal">Selection Hash:</label>
-                            <p id="selectionRPSHashReveal">----</p>
+                        <div class="form-group mb-3">
+                            <label for="secretKey">Secret Key:</label>
+                            <input type="text" class="form-control" id="keyRPS" placeholder="Enter your secret key">
                         </div>
-                        <div class="form-group position-relative">
-                            <label class="customLabel">Sign the message to add the spendbundle for reveal</label>
-                            <p>You are signing:</p>
-                            <p style="overflow-x: auto;margin-top: -20px !important;">actionReveal(4)+selectionPlayer1+secretKeyPlayer1+CoinId+GenesisChallenge</p>
-                            <pre class="precustom"><code id="cmdSingByDIDReveal" >chia rpc wallet sign_message_by_id '{"id":"<span id="didCmdSingatureReveal"></span>","message":"<span id="didCmdMessageSingatureReveal"></span>","is_hex":"True","safe_mode":"False"}'</code>
-                            </pre>
-                            <button type="button" class="btn position-absolute copy-btn" style="top: 74px; "
-                                onclick="Utils.copyToClipboard('#cmdSingByDIDReveal')">
-                                <i class="fas fa-copy"></i>
-                            </button>
+                        <div class="form-group mb-3">
+                        <h5 class="text-center mb-3" id="selectionRPSHashReveal"></h5>
                         </div>
-                        <div class="form-group">
-                            <label for="signatureSpendbundleReveal">Signature for Reveal:</label>
-                            <input type="text" class="form-control" id="signatureSpendbundleReveal" placeholder="Enter the signature">
-                        </div>
-                        <br>
-                        <br>
-                        <div class="coin-select form-group">
-                            <label for="coinIdSelectReveal">Select a coin for fee(optional):</label>
-                            <select id="coinIdSelectReveal" class="form-select coinIdSelect">
-                                <option value="">Select a coin for fee</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="feeSpendbundleReveal">Calculated Fee for 60 seconds:</label>
-                            <input type="number" class="form-control" id="feeSpendbundleReveal"  value="0" min="0.000000000001" step="0.000000000001">
-                        </div>
-                        <div class="form-group">
-                            <label for="amountChangeCoinReveal">Change to Wallet Coin:</label>
-                            <p id="amountChangeCoinReveal">----</p>
-                        </div>
-                        <div class="form-group position-relative">
-                            <label class="customLabel">Sign the message to add the spendbundle for fee</label>
-                            <p>You are signing:</p>
-                            <p style="overflow-x: auto;margin-top: -20px !important;">actionSetFee(3)+Fee+coinAmount+gameHash+coinHash+CoinId+GenesisChallenge</p>
-                            <pre class="precustom"><code id="cmdSingByDIDFeeReveal" >chia rpc wallet sign_message_by_id '{"id":"<span id="didCmdSingatureFeeReveal"></span>","message":"<span id="didCmdMessageSingatureFeeReveal"></span>","is_hex":"True","safe_mode":"False"}'</code>
-                            </pre>
-                            <button type="button" class="btn position-absolute copy-btn" style="top: 74px; "
-                                onclick="Utils.copyToClipboard('#cmdSingByDIDFeeReveal')">
-                                <i class="fas fa-copy"></i>
-                            </button>
-                        </div>
-                        <div class="form-group">
-                            <label for="signatureSpendbundleFeeReveal">Signature for Fee:</label>
-                            <input type="text" class="form-control" id="signatureSpendbundleFeeReveal" placeholder="Enter the signature">
-                        </div>
-                        <br>
-                        <button  class="btn btn-primary btn-lg" onclick="revealSelectionPlayer1()">
-                            <i class="fas fa-money-bill"></i> Reveal Selection
+                        <button class="btn btn-primary btn-lg w-100" onclick="revealSelectionPlayer1()">
+                            <i class="fas fa-play-circle"></i> Reveal
                         </button>
                     </div>
                     <div class="form-group" style="position: relative;">

@@ -389,6 +389,17 @@ async def createSolutionCloseGame(request: Request):
         return JSONResponse(content=response)
     except Exception as e:
         return JSONResponse(content={"success": False, "message": str(e)})
+@app.post("/createSolutionRevealGame")
+async def createSolutionRevealGame(request: Request):
+    try:
+        data = await request.json()
+        selection = data['selection']
+        revealKey = data['revealKey']
+        coinAmount = data['coinAmount']
+        response = await Driver.createSolutionRevealGame(selection,revealKey,coinAmount)
+        return JSONResponse(content=response)
+    except Exception as e:
+        return JSONResponse(content={"success": False, "message": str(e)})
 @app.post("/createSolutionClaimGame")
 async def createSolutionClaimGame(request: Request):
     try:

@@ -207,6 +207,22 @@ class Session {
             return { success: false, message: "Error creating solution" };
         }
     }
+    async createSolutionRevealGame(selection,revealKey,coinAmount) {
+        try {
+            const response = await fetch("/createSolutionRevealGame", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ pubkey: this.pubkey, selection: selection, revealKey: revealKey, coinAmount: coinAmount }),
+            });
+            const JsonResponse = await response.json();
+            return JsonResponse;
+        } catch (error) {
+            console.error(error);
+            return { success: false, message: "Error creating solution" };
+        }
+    }
     async createSolutionClaimGame(coinAmount,fee) {
         try {
             const response = await fetch("/createSolutionClaimGame", {

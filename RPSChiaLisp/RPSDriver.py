@@ -268,6 +268,14 @@ class RPSDriver:
                     coinAmount,
                     fee])
         return {"success": True, "solution": SerializedProgram.from_program(solutionGame).to_bytes().hex()}
+    async def createSolutionRevealGame(self,selection:int,revealKey:str,coinAmount:int):
+        solutionGame = Program.to([
+                    selection,
+                    bytes(revealKey, 'utf-8'),
+                    self.ACTION_REVEAL,
+                    coinAmount,
+                    0])
+        return {"success": True, "solution": SerializedProgram.from_program(solutionGame).to_bytes().hex()}
     async def createSolutionJoinPlayer1(self,pubKeyHex:str,amount:int,selectionHash:str,cashOutAddressHash:str):
         try:
             publicKeyPlayer1 = G1Element.from_bytes(bytes.fromhex(pubKeyHex))

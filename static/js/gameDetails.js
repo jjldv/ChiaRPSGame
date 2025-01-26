@@ -26,17 +26,14 @@ UserSession.on("connected", async () => {
 
     if (gamedetail?.spentBlockIndex == 0 && gamedetail.stage == 2  && gamedetail.publicKeyPlayer1 == UserSession.pubkey?.replace("0x","") ){
         CloseGameContainer.style.display = "block";
-        const feeSelector = new FeeSelector(feeOptions, UserSession.prefix);
-        feeSelector.on("change", (data) => {
-            feeSpendbundleClaim.value = data.value;
-        });
-        feeSelector.on("timerFinished", () => {
-            console.log("Temporizador terminado, actualizando tarifas...");
-            //TODO: UPDATE FEE
-        });
+        setFeeCloseSelector();
+    }
+    if (gamedetail?.spentBlockIndex == 0 && gamedetail.stage == 3 && UserSession.pubkey && UserSession.pubkey?.replace("0x","") == gamedetail.publicKeyPlayer1){
+        RevealGameContainer.style.display = "block";
+        setConfigReveal();
     }
 
-    if (gamedetail?.spentBlockIndex == 0 && gamedetail.stage == 2 && UserSession.pubkey && UserSession.pubkey != gamedetail.publicKeyPlayer1){
+    if (gamedetail?.spentBlockIndex == 0 && gamedetail.stage == 2 && UserSession.pubkey && UserSession.pubkey?.replace("0x","") != gamedetail.publicKeyPlayer1){
         JoinGameContainer.style.display = "block";
         const feeSelectorJoin = new FeeSelector(feeOptions, UserSession.prefix,"feeSelectorContainerJoin");
         feeSelectorJoin.on("change", (data) => {
@@ -67,17 +64,16 @@ document.addEventListener("DOMContentLoaded", async function () {
 
 async function checkCompromise(){
     selectionRPSHashReveal.innerHTML = "----";
-    if(RPSSelectReveal.value == "" || keyRPSReveal.value == ""){
+    if(selectedOptionReveal.value == "" || keyRPS.value == ""){
         return false;
     }
-    const concatSelectWithKey = await UserSession.concat([parseInt(RPSSelectReveal.value), keyRPSReveal.value]);
+    const concatSelectWithKey = await UserSession.concat([parseInt(selectedOptionReveal.value), keyRPS.value]);
     const sha256Message = await UserSession.sha256Hex(concatSelectWithKey);
-    if (sha256Message != compromisePlayer1.innerHTML){
-        selectionRPSHashReveal.innerHTML = "<span style='color:red;'>INVALID SELECTION</span>";
+    if (sha256Message != gamedetail.compromisePlayer1){
+        selectionRPSHashReveal.innerHTML = "<span style='color:red;'>INVALID SELECTION /  KEY</span>";
         return false;
     }
     selectionRPSHashReveal.innerHTML = "<span style='color:green;'>VALID SELECTION</span>";
-    setCmdMessageSignatureReveal();
     return true;
 }
 async function updateReceiveAmount(){
@@ -99,7 +95,6 @@ async function getGameDetails(showSpinner = false){
     if (RgameInfo.game.spentBlockIndex == 0 && IntervalTx == null){
         IntervalTx = setInterval(() => {
             getGameDetails();
-            checkPendingTransaction();
         }, 30000);
     }
     window.gamedetail = RgameInfo.game;
@@ -143,15 +138,16 @@ async function getGameDetails(showSpinner = false){
     }
     if (gamedetail.spentBlockIndex == 0 && gamedetail.stage == 2  && gamedetail.publicKeyPlayer1 == UserSession.pubkey?.replace("0x","") ){
         CloseGameContainer.style.display = "block";
+        setFeeCloseSelector();
 
     }
     //Reveal Player 1
-    if (gamedetail.spent_block_index == 0 && gamedetail.stage == 3 && UserSession.pubkey && UserSession.pubkey == gamedetail.publicKeyPlayer1){
-        getBalance();
+    if (gamedetail.spentBlockIndex == 0 && gamedetail.stage == 3 && UserSession.pubkey && UserSession.pubkey?.replace("0x","") == gamedetail.publicKeyPlayer1){
         RevealGameContainer.style.display = "block";
+        setConfigReveal();
     }
     //Join Player 2
-    if (gamedetail.spentBlockIndex == 0 && gamedetail.stage == 2 && UserSession.pubkey && UserSession.pubkey != gamedetail.publicKeyPlayer1){
+    if (gamedetail.spentBlockIndex == 0 && gamedetail.stage == 2 && UserSession.pubkey && UserSession.pubkey?.replace("0x","") != gamedetail.publicKeyPlayer1){
         JoinGameContainer.style.display = "block";
         if(IntervalBalance == null){
             setBalance();
@@ -169,13 +165,13 @@ async function closeGame(){
     
     try {
         let fee = Utils.XCHToMojos(parseFloat(feeSpendbundle.value));   
-        const gobyCoinSpends = [];
         if ( fee > gamedetail.gameAmount){
             Utils.displayToast("Fee can't be higher than the game amount");
             return false;
             
         }
-       
+        
+        const gobyCoinSpends = [];
         let solution = await UserSession.createSolutionCloseGame(gamedetail.gameAmount, fee);
         const gameCoinSpend = {
             coin: {
@@ -238,13 +234,15 @@ async function joinPlayer2(){
         console.log("Total required:", totalRequired.toString());
         let gameWalletPuzzleHash = gameWalletInfo.wallet_puzzle_hash;
         let changePuzzleHash = cashOutAddressHash;
-        const { selectedCoins, totalSelected, change } =
-            await UserSession.Goby.selectCoins(totalRequired);
+        const { selectedCoins, totalSelected, change } = await UserSession.Goby.selectCoins(totalRequired);
+        if (selectedCoins.length === 0) {
+            Utils.displayToast("No coins selected. Insufficient funds.");
+            return;
+        }
         const gobyCoinSpends = await UserSession.Goby.createStandarCoinSpends(
             selectedCoins,
             gameWalletPuzzleHash,
             betAmount,
-            changePuzzleHash,
             change,
             fee
         );
@@ -314,7 +312,6 @@ async function joinPlayer2(){
         feeSpendbundleJoin.value = "0";
 
 
-        checkPendingTransaction();
         return true;
     } catch (error) {
         console.error("Error in joinPlayer1FromGoby:", error);
@@ -323,38 +320,50 @@ async function joinPlayer2(){
 }
 
 async function revealSelectionPlayer1(){
-    if(RPSSelectReveal.value == "" || keyRPSReveal.value == "" || signatureSpendbundleReveal.value == ""){
-        Utils.displayToast("Select a Rock,Paper or Scissors and enter the key and signature");
+    //TODO: add fee implementation from goby
+    if(selectedOptionReveal.value == "" || keyRPS.value == "" ){
+        Utils.displayToast("Select a Rock,Paper or Scissors and enter the Secret key");
         return;
     }
-    if(coinIdSelectReveal.value != "" && (feeSpendbundleReveal.value == "" || signatureSpendbundleFeeReveal.value == ""   )){
-        Utils.displayToast("Enter a fee and signature to reveal the selection or unset the coin id to reveal the selection without a fee");
-        return;
-    }
-    if(coinIdSelectReveal.value != "" && amountChangeCoinReveal.innerHTML < 0){
-        Utils.displayToast("Insufficient funds to pay the fee");
-        return;
-    }
-    let RrevealSelectionPlayer1
-    if(coinIdSelectReveal.value != "" &&  feeSpendbundleReveal.value != ""){
-        RrevealSelectionPlayer1 = await UserSession.revealSelectionPlayer1WithFee(coinId,parseInt(RPSSelectReveal.value),keyRPSReveal.value,signatureSpendbundleReveal.value,coinIdSelectReveal.value,Utils.XCHToMojos(parseFloat(feeSpendbundleReveal.value)),signatureSpendbundleFeeReveal.value);
-    }
-    else{
-        RrevealSelectionPlayer1 = await UserSession.revealSelectionPlayer1(coinId,parseInt(RPSSelectReveal.value),keyRPSReveal.value,signatureSpendbundleReveal.value);
 
+    const gobyCoinSpends = [];
+    let solution = await UserSession.createSolutionRevealGame(parseInt(selectedOptionReveal.value), keyRPS.value, gamedetail.gameAmount);
+    const gameCoinSpend = {
+        coin: {
+            parent_coin_info: "0x" + gamedetail.parentCoinId,
+            puzzle_hash: "0x" + gamedetail.puzzleHash,
+            amount: gamedetail.gameAmount
+        },
+        puzzle_reveal: gamedetail.puzzleReveal,
+        solution: solution.solution
+    };
+
+    
+    const allCoinSpends = [
+        ...gobyCoinSpends,
+        gameCoinSpend
+    ];
+    let signature = await UserSession.Goby.signCoinSpends(allCoinSpends);
+
+    let spendBundle = {
+        coin_spends: allCoinSpends,
+        aggregated_signature: [signature]
+    };
+    const gameSmartCoin = new greenweb.SmartCoin({
+        parentCoinInfo: gamedetail.parentCoinId,
+        puzzleHash: gamedetail.puzzleHash,
+        amount: gamedetail.gameAmount,
+    });
+    const gameCoinId =  gameSmartCoin.getName();
+    let ServerTx = await UserSession.revealSelectionPlayer1(coinId,parseInt(selectedOptionReveal.value),keyRPS.value,signature)
+    console.log("ServerTx:", ServerTx);
+    if (!ServerTx.success) {
+        Utils.displayToast(ServerTx.message);
+        return false;
     }
-    if (RrevealSelectionPlayer1.message){
-        Utils.displayToast(RrevealSelectionPlayer1.message);
-    }
-    if(RrevealSelectionPlayer1.success){
-        checkPendingTransaction();
-    }
-    if(RrevealSelectionPlayer1.success){
-        RPSSelectReveal.value = "";
-        keyRPSReveal.value = "";
-        signatureSpendbundleReveal.value = "";
-        signatureSpendbundleFeeReveal.value = "";
-    }
+    Utils.displayToast("Transaction sent successfully");
+    selectedOptionReveal.value = "";
+    keyRPS.value = "";
     
 }
 async function claimGame(){
@@ -492,6 +501,14 @@ function selectOption(value, element) {
     element.classList.add("selected");
     selectedOption = value;
 }
+function selectOptionReveal(value, element) {
+    document
+        .querySelectorAll(".rps-option-reveal")
+        .forEach((el) => el.classList.remove("selected"));
+    element.classList.add("selected");
+    document.getElementById("selectedOptionReveal").value = value;
+    checkCompromise();
+}
 function setFeeClaimSelector(){
     if (!window.feeSelectorClaim) {
         window.feeSelectorClaim = new FeeSelector([{ fee: "0", time: -1 }], UserSession.prefix, "feeClaimSelectorContainer");
@@ -501,5 +518,65 @@ function setFeeClaimSelector(){
         window.feeSelectorClaim.on("timerFinished", () => {
             console.log("Temporizador terminado, actualizando tarifas...");
         });
+    }
+}
+function setFeeCloseSelector(){
+    if (!window.feeSelectorClose) {
+        window.feeSelectorClose = new FeeSelector([{ fee: "0", time: -1 }], UserSession.prefix);
+        window.feeSelectorClose.on("change", (data) => {
+            feeSpendbundle.value = data.value;
+        });
+        window.feeSelectorClose.on("timerFinished", () => {
+            console.log("Temporizador terminado, actualizando tarifas...");
+        });
+    }
+}
+async function setConfigReveal(){
+    if (window.configRevealInitialized) {
+        return;
+    }
+    window.configRevealInitialized = true;
+    jsonFileName.innerHTML = gamedetail.compromisePlayer1+".json";
+    const secretKey = document.getElementById("keyRPS");
+    const selectedOptionReveal = document.getElementById("selectedOptionReveal");
+    let PlayerRevealStorge = localStorage.getItem(gamedetail.compromisePlayer1);
+    let PlayerReveal = null;
+    if (PlayerRevealStorge){
+        PlayerReveal = JSON.parse(PlayerRevealStorge);
+        secretKey.value = PlayerReveal.secretKey;
+        const selectedOptionElement = document.querySelector(`.rps-option-reveal[data-value="${PlayerReveal.selection.value}"]`);
+        if (selectedOptionElement) {
+            selectOptionReveal(PlayerReveal.selection.value, selectedOptionElement);
+            await checkCompromise();
+        }
+    }
+    else{
+        jsonFileContainer.style.display = "block";
+        
+    }
+    secretKey.addEventListener("input", async () => {
+        await checkCompromise();
+    });
+    selectedOptionReveal.addEventListener("input", async () => {
+        await checkCompromise();
+    });
+
+}
+async function handleFileUploadReveal(event) {
+    const file = event.target.files[0];
+    const secretKey = document.getElementById("keyRPS");
+    const selectedOptionReveal = document.getElementById("selectedOptionReveal");
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            const PlayerReveal = JSON.parse(e.target.result);
+            secretKey.value = PlayerReveal.secretKey;
+            const selectedOptionElement = document.querySelector(`.rps-option-reveal[data-value="${PlayerReveal.selection.value}"]`);
+            if (selectedOptionElement) {
+                selectOptionReveal(PlayerReveal.selection.value, selectedOptionElement);
+                await checkCompromise();
+            }
+        };
+        reader.readAsText(file);
     }
 }

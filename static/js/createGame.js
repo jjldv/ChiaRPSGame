@@ -184,6 +184,8 @@ function saveSelectionData() {
     URL.revokeObjectURL(url);
 
     Utils.displayToast("Selection data saved successfully!");
+    localStorage.setItem(selectionHash, JSON.stringify(data));
+
 }
 async function validateBalance() {
     const betAmountXCH =
@@ -263,11 +265,10 @@ async function joinPlayer1FromGoby(toGameWalletAddress,betAmount,fee,selectionHa
             selectedCoins,
             gameWalletPuzzleHash,
             betAmount,
-            changePuzzleHash,
             change,
             fee
         );
-        gobyCoinSpends.sort((a, b) => a.coin.amount - b.coin.amount);
+       
 
         const highestCoinSpend = gobyCoinSpends[gobyCoinSpends.length - 1];
 

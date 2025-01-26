@@ -2,7 +2,8 @@
 class Goby {
     constructor() {
         if (!window.chia) {
-            throw new Error("Goby Wallet no está disponible");
+            Utils.displayToast("Goby Wallet no está disponible");
+            return;
         }
         this.chiaWallet = window.chia;
         this.userInfo = null;
@@ -78,7 +79,7 @@ class Goby {
         });
     }
 
-    async createStandarCoinSpends(selectedCoins, toPuzzleHash, amount, changePuzzleHash, totalChange, fee) {
+    async createStandarCoinSpends(selectedCoins, toPuzzleHash, amount, totalChange, fee) {
         console.log("Fee:", fee.toString());
         const coinSpends = [];
         const totalAmount = BigInt(amount);
@@ -102,17 +103,18 @@ class Goby {
                     changeForThisCoin = coinAmount - remainingAmount - totalFee;
                 }
                 conditions.push(greenweb.spend.reserveFeeCondition(Number(totalFee)));
+                conditions.push(greenweb.spend.createCoinCondition(toPuzzleHash,totalAmount));
+
             } else {
                 amountToSend = coinAmount <= remainingAmount ? coinAmount : remainingAmount;
             }
     
             if (amountToSend > 0n) {
-                conditions.push(greenweb.spend.createCoinCondition(toPuzzleHash, Number(amountToSend)));
                 remainingAmount -= amountToSend;
             }
     
             if (changeForThisCoin > 0n) {
-                conditions.push(greenweb.spend.createCoinCondition(changePuzzleHash, Number(changeForThisCoin)));
+                conditions.push(greenweb.spend.createCoinCondition(coin.puzzle_hash, Number(changeForThisCoin)));
                 remainingChange -= changeForThisCoin;
             }
     
@@ -145,7 +147,8 @@ class Goby {
         }
     
         if (remainingAmount > 0n) {
-            throw new Error(`No se pudo cubrir el monto total. Falta: ${remainingAmount.toString()}`);
+            Utils.displayToast(`No se pudo cubrir el monto total. Falta: ${remainingAmount.toString()}`);
+            return;
         }
     
         return coinSpends;
@@ -153,7 +156,8 @@ class Goby {
     
     async standardTransfer(toAddress, amount, fee = 50000000) {
         if (!this.userInfo) {
-            throw new Error("User session not initialized. Call initialize() first.");
+            Utils.displayToast("User session not initialized. Call initialize() first.");
+            return;
         }
     
         try {
@@ -166,7 +170,8 @@ class Goby {
             console.log("Change:", change.toString());
     
             if (selectedCoins.length === 0) {
-                throw new Error("No coins selected. Insufficient funds.");
+                Utils.displayToast("No coins selected. Insufficient funds.");
+                return;
             }
     
             const toPuzzleHash = greenweb.util.address.addressToPuzzleHash(toAddress, this.userInfo.prefix);
@@ -178,14 +183,16 @@ class Goby {
             console.log("Generated Coin Spends:", coinSpends);
     
             if (coinSpends.length === 0) {
-                throw new Error("No coin spends generated.");
+                Utils.displayToast("No coin spends generated.");
+                return;
             }
     
             let signature = await this.signCoinSpends(coinSpends);
             console.log("Signature:", signature);
     
             if (!signature ) {
-                throw new Error("Invalid signature.");
+                Utils.displayToast("Invalid signature.");
+                return;
             }
             let spendBundle = {
                 coin_spends: coinSpends,
@@ -237,7 +244,8 @@ class Goby {
         console.log("Total seleccionado final:", totalSelected.toString());
     
         if (totalSelected < totalRequired) {
-            throw new Error(`Fondos insuficientes para la transferencia y el fee. Requerido: ${totalRequired.toString()}, Disponible: ${totalSelected.toString()}`);
+            Utils.displayToast(`Insufficient funds for the transfer and fee. Required: ${totalRequired.toString()}, Available: ${totalSelected.toString()}`);
+            return { selectedCoins: [], totalSelected: 0n, change: 0n };
         }
     
         const change = totalSelected - BigInt(totalRequired);
