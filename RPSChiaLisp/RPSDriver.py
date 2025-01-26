@@ -1705,3 +1705,22 @@ class RPSDriver:
             return spend_bundle
         except Exception as e:
             return SpendBundle([], G2Element())
+    async def setMyName(self, pubkey: str, message: str, signature: str, name: str):
+        try:
+            message = f"Set name: {name}"
+            verification_result = await self.verifySignatureLogin(pubkey, message, signature, "BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_AUG:CHIP-0002_", "")
+            if verification_result["success"]:
+                self.GameDatabase.setUserName(pubkey, name)
+                return {"success": True, "message": "Name updated and signature verified"}
+            else:
+                return {"success": False, "message": "Signature verification failed"}
+        except Exception as e:
+            return {"success": False, "message": str(e)}
+    async def getUserName(self, pubkey: str):
+        try:
+            name = self.GameDatabase.getUserName(pubkey)
+            if len(name) > 30:
+                return {"success": True, "name": name[:30]+"...", "fullname": name}
+            return {"success": True, "name": name}
+        except Exception as e:
+            return {"success": False, "message": str(e)}

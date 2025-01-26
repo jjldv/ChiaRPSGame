@@ -94,18 +94,28 @@ class Session {
             console.error("Error setting user session:", error);
         }
     }
-    setUserSessionUI(isLoged = true) {
+    async setUserSessionUI(isLoged = true) {
         let profilePicture = document.getElementById("ProfilePicture");
         let userUI = document.getElementById("UserUI");
 
         if (isLoged) {
             profilePicture.src = this.profilePictureLoged;
             userUI.innerHTML = `
-                <li><a class="dropdown-item" href="/myGameWallet">My Game Wallet</a></li>
+                <li class="dropdown-item" id="NameLabel" ></li>
                 <li><a class="dropdown-item" href="/createGame">Create Game</a></li>
+                <li><a class="dropdown-item" id="btnSetMyName" >Set my name</a></li>
                 <li><a class="dropdown-item" href="/userOpenGames/${this.pubkey}">My Open Games</a></li>
                 <li><a class="dropdown-item" href="/userHistoryGames/${this.pubkey}">My History Games</a></li>
             `;
+            document
+                .getElementById("btnSetMyName")
+                .addEventListener("click", () => {
+                    this.setMyName();
+                });
+            let UserName = await Utils.getUserName(this.pubkey);
+            if (UserName.success) {
+                document.getElementById("NameLabel").innerHTML = UserName.name;
+            }
         } else {
             profilePicture.src = this.profilePictureNotLoged;
             userUI.innerHTML = `
@@ -652,5 +662,46 @@ class Session {
     startPeriodicUpdate(nodeStatusElement, updateInterval = 60000) {
         this.updateBlockchainSyncStatus(nodeStatusElement);
         return setInterval(() => this.updateBlockchainSyncStatus(nodeStatusElement), updateInterval);
+    }
+    async setMyName() {
+        const name = prompt("Please enter your name:");
+        if (!name) {
+            alert("Name cannot be empty.");
+            return;
+        }
+
+        let message = `Set name: ${name}`;
+        try {
+            message = Utils.utf8ToHex(message);
+            const signature = await this.Goby.signMessage(message, this.pubkey);
+            console.log("Signature:", signature);
+            const response = await this.setMyNameOnServer(message, signature, name);
+            if (response) {
+                document.getElementById("NameLabel").innerHTML = name;
+            }
+        } catch (error) {
+            console.error("Error setting name:", error);
+            Utils.displayToast("Error setting name");
+        }
+    }
+    async setMyNameOnServer(message, signature, name) {
+        try {
+            const response = await Utils.fetch("/setMyName", {
+                pubkey: this.pubkey,
+                message: message,
+                signature: signature,
+                name: name,
+            });
+            if (response.success) {
+                Utils.displayToast("Name set successfully");
+                return true;
+            } else {
+                Utils.displayToast(response.message);
+                return false;
+            }
+        } catch (error) {
+            console.error(error);
+            Utils.displayToast("Error setting name");
+        }
     }
 }

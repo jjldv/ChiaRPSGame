@@ -106,9 +106,9 @@ async function getGameDetails(showSpinner = false){
     document.querySelectorAll('.coinAmount').forEach(element => {
         element.innerHTML = Utils.formatMojosPrefix(GameAmount, IS_MAINNET);
     });
-    publicKeyPlayer1.innerHTML = `<a href="/userHistoryGames/${gamedetail.publicKeyPlayer1}">${gamedetail.publicKeyPlayer1}</a>`;
+    publicKeyPlayer1.innerHTML = `<a href="/userHistoryGames/${gamedetail.publicKeyPlayer1}">${gamedetail.namePlayer1}</a>`;
     compromisePlayer1.innerHTML = gamedetail.compromisePlayer1;
-    publicKeyPlayer2.innerHTML = gamedetail.publicKeyPlayer2 !="----" ? `<a href="/userHistoryGames/${gamedetail.publicKeyPlayer2}">${gamedetail.publicKeyPlayer2}</a>` : gamedetail.publicKeyPlayer2;
+    publicKeyPlayer2.innerHTML = gamedetail.publicKeyPlayer2 !="----" ? `<a href="/userHistoryGames/${gamedetail.publicKeyPlayer2}">${gamedetail.namePlayer2}</a>` : gamedetail.namePlayer2;
     selectionPlayer2.innerHTML = gamedetail.emojiSelectionPlayer2;
     gamePuzzleReveal.innerHTML = gamedetail.puzzleReveal;
     gamePuzzleRevealDisassembled.innerHTML = gamedetail.puzzleRevealDisassembled;

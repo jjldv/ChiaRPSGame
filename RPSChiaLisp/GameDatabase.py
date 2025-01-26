@@ -36,7 +36,13 @@ class GameDatabase:
         )
         ''')
 
-        
+        self.c.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY,
+            publicKey TEXT UNIQUE,
+            name TEXT
+        )
+        ''')
 
         self.c.execute('''
         CREATE TABLE IF NOT EXISTS game_data (
@@ -127,10 +133,11 @@ class GameDatabase:
 
     def topWinners(self):
         self.c.execute('''
-        SELECT publicKeyWinner AS player, COUNT(*) AS wins
-        FROM game_data
-        WHERE (gameStatus = 'REVEALED' OR gameStatus = 'CLAIMED' ) AND publicKeyWinner IS NOT NULL
-        GROUP BY publicKeyWinner
+        SELECT COALESCE(u.name, g.publicKeyWinner) AS player,g.publicKeyWinner, COUNT(*) AS wins
+        FROM game_data g
+        LEFT JOIN users u ON g.publicKeyWinner = u.publicKey
+        WHERE (g.gameStatus = 'REVEALED' OR g.gameStatus = 'CLAIMED') AND g.publicKeyWinner IS NOT NULL
+        GROUP BY g.publicKeyWinner
         ORDER BY wins DESC
         LIMIT 10
         ''')
@@ -153,10 +160,11 @@ class GameDatabase:
         return [dict(row) for row in rows]
     def topEarners(self):
         self.c.execute('''
-        SELECT publicKeyWinner AS player, SUM(gameAmount) AS total_earned
-        FROM game_data
-        WHERE (gameStatus = 'REVEALED' OR gameStatus = 'CLAIMED' ) AND publicKeyWinner IS NOT NULL
-        GROUP BY publicKeyWinner
+        SELECT COALESCE(u.name, g.publicKeyWinner) AS player,g.publicKeyWinner, SUM(g.gameAmount) AS total_earned
+        FROM game_data g
+        LEFT JOIN users u ON g.publicKeyWinner = u.publicKey
+        WHERE (g.gameStatus = 'REVEALED' OR g.gameStatus = 'CLAIMED') AND g.publicKeyWinner IS NOT NULL
+        GROUP BY g.publicKeyWinner
         ORDER BY total_earned DESC
         LIMIT 10
         ''')
@@ -231,29 +239,49 @@ class GameDatabase:
         self.conn.commit()
     def getOpenGames(self):
         self.c.execute('''
-        SELECT * FROM game_data
-        WHERE  coinStatus = 'UNSPENT'
+        SELECT g.*, 
+               COALESCE(u1.name, g.publicKeyPlayer1) AS namePlayer1, 
+               COALESCE(u2.name, g.publicKeyPlayer2) AS namePlayer2
+        FROM game_data g
+        LEFT JOIN users u1 ON g.publicKeyPlayer1 = u1.publicKey
+        LEFT JOIN users u2 ON g.publicKeyPlayer2 = u2.publicKey
+        WHERE g.coinStatus = 'UNSPENT'
         ''')
         rows = self.c.fetchall()
         return [dict(row) for row in rows]
     def getUserOpenGames(self, publicKey):
         self.c.execute('''
-        SELECT * FROM game_data
-        WHERE (publicKeyPlayer1 = ? OR publicKeyPlayer2 = ?) AND coinStatus = 'UNSPENT'
+        SELECT g.*, 
+               COALESCE(u1.name, g.publicKeyPlayer1) AS namePlayer1, 
+               COALESCE(u2.name, g.publicKeyPlayer2) AS namePlayer2
+        FROM game_data g
+        LEFT JOIN users u1 ON g.publicKeyPlayer1 = u1.publicKey
+        LEFT JOIN users u2 ON g.publicKeyPlayer2 = u2.publicKey
+       WHERE (publicKeyPlayer1 = ? OR publicKeyPlayer2 = ?) AND coinStatus = 'UNSPENT'
         ''', (publicKey, publicKey))
         rows = self.c.fetchall()
         return [dict(row) for row in rows]
     def getHistoryGames(self):
         self.c.execute('''
-        SELECT * FROM game_data
+        SELECT g.*, 
+               COALESCE(u1.name, g.publicKeyPlayer1) AS namePlayer1, 
+               COALESCE(u2.name, g.publicKeyPlayer2) AS namePlayer2
+        FROM game_data g
+        LEFT JOIN users u1 ON g.publicKeyPlayer1 = u1.publicKey
+        LEFT JOIN users u2 ON g.publicKeyPlayer2 = u2.publicKey
         WHERE gameStatus = 'REVEALED' OR gameStatus = 'CLAIMED' OR gameStatus = 'CLOSED' 
         ''')
         rows = self.c.fetchall()
         return [dict(row) for row in rows]
     def getGameDetails(self, coinId):
         self.c.execute('''
-        SELECT * FROM game_data
-        WHERE coinId = ?
+        SELECT g.*, 
+               COALESCE(u1.name, g.publicKeyPlayer1) AS namePlayer1, 
+               COALESCE(u2.name, g.publicKeyPlayer2) AS namePlayer2
+        FROM game_data g
+        LEFT JOIN users u1 ON g.publicKeyPlayer1 = u1.publicKey
+        LEFT JOIN users u2 ON g.publicKeyPlayer2 = u2.publicKey
+        WHERE g.coinId = ?
         ''', (coinId,))
         return dict(self.c.fetchone())
 
@@ -285,9 +313,25 @@ class GameDatabase:
         return [dict(row) for row in self.c.fetchall()]
     def getUserHistoryGames(self, publicKey):
         self.c.execute('''
-        SELECT * FROM game_data
+        SELECT g.*, 
+               COALESCE(u1.name, g.publicKeyPlayer1) AS namePlayer1, 
+               COALESCE(u2.name, g.publicKeyPlayer2) AS namePlayer2
+        FROM game_data g
+        LEFT JOIN users u1 ON g.publicKeyPlayer1 = u1.publicKey
+        LEFT JOIN users u2 ON g.publicKeyPlayer2 = u2.publicKey
         WHERE (publicKeyPlayer1 = ? OR publicKeyPlayer2 = ?) AND (gameStatus = 'REVEALED' OR gameStatus = 'CLAIMED' OR gameStatus = 'CLOSED')
-        ORDER BY id DESC
         ''', (publicKey, publicKey))
         rows = self.c.fetchall()
         return [dict(row) for row in rows]
+    def setUserName(self, publicKey, name):
+        self.c.execute('''
+        INSERT OR REPLACE INTO users (publicKey, name) VALUES (?, ?)
+        ''', (publicKey, name))
+        self.conn.commit()
+        return self.c.rowcount > 0
+    def getUserName(self, publicKey):
+        self.c.execute('''
+        SELECT name FROM users WHERE publicKey = ?
+        ''', (publicKey,))
+        result = self.c.fetchone()
+        return result[0] if result else publicKey

@@ -434,6 +434,27 @@ async def createSolutionJoinPlayer2(request: Request):
         return JSONResponse(content=response)
     except Exception as e:
         return JSONResponse(content={"success": False, "message": str(e)})
+@app.post("/setMyName")
+async def setMyName(request: Request):
+    try:
+        data = await request.json()
+        pubkey = data['pubkey'].replace("0x", "")
+        message = data['message']
+        signature = data['signature']
+        name = data['name']
+        response = await Driver.setMyName(pubkey, message, signature, name)
+        return JSONResponse(content=response)
+    except Exception as e:
+        return JSONResponse(content={"success": False, "message": str(e)})
+@app.post("/getUserName")
+async def getUserName(request: Request):
+    try:
+        data = await request.json()
+        pubkey = data['pubkey'].replace("0x", "")
+        response = await Driver.getUserName(pubkey)
+        return JSONResponse(content=response)
+    except Exception as e:
+        return JSONResponse(content={"success": False, "message": str(e)})
 @app.post("/pushTx")
 async def pushTx(request: Request):
     try:
