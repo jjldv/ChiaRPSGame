@@ -247,6 +247,14 @@ class RPSDriver:
         except Exception as e:
             print("Error creating spend open game", e)
             raise e 
+    async def createSolutionClaimGame(self,coinAmount:int,fee:int):
+        solutionGame = Program.to([
+                    1,
+                    1,
+                    self.ACTION_CLAIM_PLAYER2,
+                    coinAmount,
+                    fee])
+        return {"success": True, "solution": SerializedProgram.from_program(solutionGame).to_bytes().hex()}
     async def createSolutionCloseGame(self,coinAmount:int,fee:int):
         solutionGame = Program.to([
                     0,

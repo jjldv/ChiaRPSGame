@@ -105,28 +105,13 @@
                     <br>
                     <div id="ClaimGameContainer" style="text-align: center; border-style: solid; padding: 10px; display: none;">
                         <h3>Claim Game when Player 1 did not reveal in 24 hours</h3>
-                        <div class="form-group">
-                            <label for="feeSpendbundleClaim">Calculated Fee for 60 seconds:</label>
-                            <input type="number" class="form-control" id="feeSpendbundleClaim"  value="0" min="0.000000000001" step="0.000000000001">
-                        </div>
-                        <div class="form-group">
-                            <label for="amountreceiveSpendbundleClaim">You will receive:</label>
-                            <p id="amountreceiveSpendbundleClaim">----</p>
-                        </div>
-                        <div class="form-group position-relative">
-                            <label class="customLabel">Sign the message to add the spendbundle</label>
-                            <p>You are signing:</p>
-                            <p style="overflow-x: auto;margin-top: -20px !important;">actionRetire(3)+fee+puzzleHashWP1+CoinId+GenesisChallenge</p>
-                            <pre class="precustom"><code id="cmdSingByDIDClaim" >chia rpc wallet sign_message_by_id '{"id":"<span id="didCmdSingatureClaim"></span>","message":"<span id="didCmdMessageSingatureClaim"></span>","is_hex":"True","safe_mode":"False"}'</code>
-                            </pre>
-                            <button type="button" class="btn position-absolute copy-btn" style="top: 74px; "
-                                onclick="Utils.copyToClipboard('#cmdSingByDIDClaim')">
-                                <i class="fas fa-copy"></i>
-                            </button>
-                        </div>
-                        <div class="form-group">
-                            <label for="signatureSpendbundleClaim">Signature:</label>
-                            <input type="text" class="form-control" id="signatureSpendbundleClaim" placeholder="Enter the signature">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label for="feeSelector">Network Fee (deducted from the game amount)</label>
+                                <div id="feeClaimSelectorContainer"></div>
+                                <input type="number" class="form-control" id="feeSpendbundleClaim" value="0" min="0.000000000001" step="0.000000000001" style="display: none;">
+
+                            </div>
                         </div>
                         <br>
                         <button  class="btn btn-primary btn-lg" onclick="claimGame()">

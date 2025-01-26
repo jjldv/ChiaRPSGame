@@ -18,13 +18,17 @@ UserSession.on("connected", async () => {
     ];
     console.log(UserSession.prefix);
     
-    
+    if (gamedetail?.spentBlockIndex == 0 && gamedetail.stage == 3 && gamedetail.publicKeyPlayer2 ==  UserSession.pubkey?.replace("0x","")){
+        ClaimGameContainer.style.display = "block";
+        setFeeClaimSelector();
+        return;
+    }
 
     if (gamedetail?.spentBlockIndex == 0 && gamedetail.stage == 2  && gamedetail.publicKeyPlayer1 == UserSession.pubkey?.replace("0x","") ){
         CloseGameContainer.style.display = "block";
         const feeSelector = new FeeSelector(feeOptions, UserSession.prefix);
         feeSelector.on("change", (data) => {
-            feeSpendbundle.value = data.value;
+            feeSpendbundleClaim.value = data.value;
         });
         feeSelector.on("timerFinished", () => {
             console.log("Temporizador terminado, actualizando tarifas...");
@@ -132,16 +136,14 @@ async function getGameDetails(showSpinner = false){
         clearInterval(IntervalTx);
     }
     //Claim Player 2
-    if (gamedetail.spentBlockIndex == 0 && gamedetail.stage == 3 && gamedetail.publicKeyPlayer2 == UserSession.pubkey){
+    if (gamedetail.spentBlockIndex == 0 && gamedetail.stage == 3 && gamedetail.publicKeyPlayer2 ==  UserSession.pubkey?.replace("0x","")){
         ClaimGameContainer.style.display = "block";
-        if(feeSpendbundleClaim.value == "0" || feeSpendbundleClaim.value == ""){
-            setFeeClaimGame();
-        }
+        setFeeClaimSelector();
         return;
     }
     if (gamedetail.spentBlockIndex == 0 && gamedetail.stage == 2  && gamedetail.publicKeyPlayer1 == UserSession.pubkey?.replace("0x","") ){
         CloseGameContainer.style.display = "block";
-        
+
     }
     //Reveal Player 1
     if (gamedetail.spent_block_index == 0 && gamedetail.stage == 3 && UserSession.pubkey && UserSession.pubkey == gamedetail.publicKeyPlayer1){
@@ -210,7 +212,6 @@ async function closeGame(){
         }
         Utils.displayToast("Transaction sent successfully");
         feeSpendbundle.value = "0";
-        checkPendingTransaction();
         return true;
     } catch (error) {
         console.error("Error in close game:", error);
@@ -357,17 +358,60 @@ async function revealSelectionPlayer1(){
     
 }
 async function claimGame(){
-    if(feeSpendbundleClaim.value == "" || signatureSpendbundleClaim.value == ""){
-        Utils.displayToast("Enter a fee and signature to claim the game");
+    if(feeSpendbundleClaim.value == "" ){
+        Utils.displayToast("Enter a fee to claim the game");
         return;
     }
-    const RclaimGame = await UserSession.claimGame(coinId,Utils.XCHToMojos(parseFloat(feeSpendbundleClaim.value)),signatureSpendbundleClaim.value);
-    if (RclaimGame.message){
-        Utils.displayToast(RclaimGame.message);
+    try {
+        let fee = Utils.XCHToMojos(parseFloat(feeSpendbundleClaim.value));   
+        const gobyCoinSpends = [];
+        if ( fee > gamedetail.gameAmount){
+            Utils.displayToast("Fee can't be higher than the game amount");
+            return false;
+            
+        }
+       
+        let solution = await UserSession.createSolutionClaimGame(gamedetail.gameAmount, fee);
+        const gameCoinSpend = {
+            coin: {
+                parent_coin_info: "0x" + gamedetail.parentCoinId,
+                puzzle_hash: "0x" + gamedetail.puzzleHash,
+                amount: gamedetail.gameAmount
+            },
+            puzzle_reveal: gamedetail.puzzleReveal,
+            solution: solution.solution
+        };
+
+       
+        const allCoinSpends = [
+            ...gobyCoinSpends,
+            gameCoinSpend
+        ];
+        let signature = await UserSession.Goby.signCoinSpends(allCoinSpends);
+
+        let spendBundle = {
+            coin_spends: allCoinSpends,
+            aggregated_signature: [signature]
+        };
+        const gameSmartCoin = new greenweb.SmartCoin({
+            parentCoinInfo: gamedetail.parentCoinId,
+            puzzleHash: gamedetail.puzzleHash,
+            amount: gamedetail.gameAmount,
+        });
+        const gameCoinId =  gameSmartCoin.getName();
+        let ServerTx = await UserSession.claimGame(gameCoinId, fee, signature);
+        console.log("ServerTx:", ServerTx);
+        if (!ServerTx.success) {
+            Utils.displayToast(ServerTx.message);
+            return false;
+        }
+        Utils.displayToast("Transaction sent successfully");
+        feeSpendbundleClaim.value = "";
+        return true;
+    } catch (error) {
+        console.error("Error in close game:", error);
+        return false;
     }
-    
-    signatureSpendbundleClaim.value = "";
-    feeSpendbundleClaim.value = "";
 }
 async function setBalance() {
     const balance = await UserSession.getWalletBalance();
@@ -447,4 +491,15 @@ function selectOption(value, element) {
         .forEach((el) => el.classList.remove("selected"));
     element.classList.add("selected");
     selectedOption = value;
+}
+function setFeeClaimSelector(){
+    if (!window.feeSelectorClaim) {
+        window.feeSelectorClaim = new FeeSelector([{ fee: "0", time: -1 }], UserSession.prefix, "feeClaimSelectorContainer");
+        window.feeSelectorClaim.on("change", (data) => {
+            feeSpendbundleClaim.value = data.value;
+        });
+        window.feeSelectorClaim.on("timerFinished", () => {
+            console.log("Temporizador terminado, actualizando tarifas...");
+        });
+    }
 }
