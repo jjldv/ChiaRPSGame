@@ -1,6 +1,6 @@
 .precustom {
-    white-space: pre-wrap; 
-    word-break: break-word; 
+    white-space: pre-wrap;
+    word-break: break-word;
     background-color: #012456;
     color: #ffffff;
     padding: 10px;
@@ -26,28 +26,34 @@
     background-color: #0264ad;
 }
 
-.customLabel{
-    color:#dee2e6;
+.customLabel {
+    color: #dee2e6;
 }
-.dropdown-item{
+
+.dropdown-item {
     cursor: pointer;
 }
+
 .wallet-info p {
-    margin-top: 0; 
-    margin-bottom: 5px; 
+    margin-top: 0;
+    margin-bottom: 5px;
 }
-.copy-icon{
+
+.copy-icon {
     cursor: pointer;
 }
+
 #WalletAddress,
-#WalletPuzzleHash{
-    color:darkgreen;
-    
+#WalletPuzzleHash {
+    color: darkgreen;
+
 }
-.cardWhite{
+
+.cardWhite {
     background-color: #ffffff;
-   
+
 }
+
 .card {
     border-radius: 5px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
@@ -58,18 +64,22 @@
     justify-content: space-between;
     width: 300px;
 }
+
 .card-container {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
 }
+
 .card-title {
     font-size: 1.2em;
     margin-bottom: 10px;
 }
+
 .card-content {
     margin-bottom: 10px;
 }
+
 .card-button {
     background-color: #007bff;
     color: white;
@@ -78,6 +88,247 @@
     border-radius: 5px;
     cursor: pointer;
 }
+
 .card-button:hover {
     background-color: #0056b3;
+}
+
+#DIDWalletConnect option {
+    background-color: #ffffff;
+    color: #000000;
+}
+
+#gobyWalletContent .btn-primary {
+    transition: all 0.3s ease;
+}
+
+#gobyWalletContent .btn-primary:hover {
+    background-color: #45a049 !important;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+    transform: translateY(-2px);
+}
+
+#gobyWalletContent .btn-primary:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+body {
+    background-color: #1a1a2e;
+    color: #ffffff;
+}
+
+.game-container {
+    background-color: #16213e;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.wallet-info {
+    background-color: #0f3460;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.rps-selection {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 20px;
+}
+
+.rps-option,.rps-option-reveal {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    padding: 10px;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.rps-option:hover,.rps-option-reveal:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.rps-option.selected,.rps-option-reveal.selected {
+    background-color: #e94560;
+}
+
+.rps-icon {
+    font-size: 3rem;
+    margin-bottom: 5px;
+}
+
+.rps-label {
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.wallet-info .truncate {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    display: inline-block;
+}
+
+.wallet-info .copy-icon {
+    cursor: pointer;
+    margin-left: 5px;
+}
+
+.wallet-info .public-key,
+.wallet-info .wallet-address {
+    font-size: 0.8rem;
+    word-break: break-all;
+}
+
+.input-group-append {
+    cursor: pointer;
+}
+
+.input-group-text {
+    background-color: #0f3460;
+    color: #ffffff;
+    border: 1px solid #0f3460;
+}
+
+.input-group-text:hover {
+    background-color: #e94560;
+}
+
+.input-group-text.save-btn {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+.input-group-text.save-btn:hover {
+    background-color: #218838;
+}
+
+.fa-info-circle {
+    margin-left: 5px;
+    cursor: pointer;
+    color: #007bff;
+}
+
+.fee-selector-wrapper {
+    font-family: Arial, sans-serif;
+    position: relative;
+}
+
+.fee-select-container {
+    position: relative;
+    height: 40px;
+}
+.form-control {
+    width: 100%;
+    padding: 10px 30px 10px 10px;
+    border: 1px solid #2f3440;
+    border-radius: 4px;
+    background-color: #1c2230;
+    color: transparent;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    color: white;
+}
+.fee-selector-wrapper {
+    width: 100%;
+}
+
+.fee-select-container {
+    position: relative;
+    width: 100%;
+    height: 40px; /* Adjust as needed */
+}
+
+#feeSelect,
+#customFeeInput,
+.fee-display {
+    width: 100%;
+    height: 100%;
+    padding: 10px 30px 10px 10px;
+    border: 1px solid #2f3440;
+    border-radius: 4px;
+    background-color: #1c2230;
+    color: #ffffff;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+#feeSelect {
+    z-index: 1;
+}
+
+#customFeeInput {
+    z-index: 3;
+    display: none;
+}
+
+.fee-display {
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    pointer-events: none;
+}
+
+.fee-value {
+    color: #ffffff;
+    flex-grow: 1;
+}
+
+.fee-dropdown-icon {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    color: #ffffff;
+    cursor: pointer;
+    z-index: 5;
+}
+
+.fee-refresh-bar {
+    width: 100%;
+    height: 2px;
+    background-color: #2f3440;
+    margin-top: 2px;
+    overflow: hidden;
+}
+
+.fee-refresh-progress {
+    height: 100%;
+    width: 0;
+    background-color: #32d39c;
+    transition: width 0.1s linear;
+}
+
+#feeSelect option {
+    background-color: #1c2230;
+    color: #ffffff;
+}
+
+/* Estilos para el placeholder */
+#customFeeInput::placeholder {
+    color: #6c757d;
+    opacity: 1;
+}
+
+#customFeeInput:focus::placeholder {
+    color: transparent;
+}
+.fee-dropdown-icon, .fee-display {
+    cursor: pointer;
+}
+
+.fee-select-container:focus-within {
+    outline: 2px solid #4a90e2; /* O cualquier color que prefieras */
 }

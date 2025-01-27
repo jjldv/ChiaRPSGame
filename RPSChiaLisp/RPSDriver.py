@@ -24,10 +24,12 @@ from RPSChiaLisp.WalletClient import WalletClient
 from RPSChiaLisp.FNClient import FNClient
 from RPSChiaLisp.GameDatabase import GameDatabase
 import datetime
-import datetime
+from RPSChiaLisp.Firebase import Firebase
+
 
 class RPSDriver:
     def __init__(self, hexPrivateKey:str):
+        self.Firebase =  Firebase("serviceAccountKey.json")
         self.GameDatabase = GameDatabase()
         self.CASH_OUT_ACTION = 0
         self.ACTION_JOIN_PLAYER1 = 1
@@ -57,37 +59,132 @@ class RPSDriver:
     async def syncHistoryGames(self):
         try:
             lastIndexSync = self.GameDatabase.getLastIndexSync()
+            print("Last index sync history", lastIndexSync)
             historyGames = await self.getHistoryGames(lastIndexSync)
+            print("Found history games", len(historyGames["historyGames"]))
             if historyGames["success"]:
                 for game in historyGames["historyGames"]:
+                    print("processing game", game["coin_id"])
                     gameF = (
+                            game["parent_coin_info"],
                             game["coin_id"],
+                            game["puzzleHash"],
+                            game["puzzleReveal"],
                             game["gameResult"],
+                            game["stage"],
                             game["stageName"],
                             game["publicKeyWinner"],
                             game["publicKeyPlayer1"],
                             game["publicKeyPlayer2"],
+                            game["compromisePlayer1"],
                             game["selectionPlayer1"],
+                            game["secretKeyPlayer1"],
+                            game["emojiSelectionPlayer1"],
                             game["selectionPlayer2"],
+                            game["emojiSelectionPlayer2"],
                             game["date"],
                             game["timestamp"],
                             game["amount"],
                             game["confirmed_block_index"],
                             game["spent_block_index"],
-                            game["oracleConfirmedBlockIndex"]
+                            game["oracleConfirmedBlockIndex"],
+                            "SPENT"
                         )
+                    if lastIndexSync < game["oracleConfirmedBlockIndex"]:
+                        self.GameDatabase.updateLastIndexSync(game["oracleConfirmedBlockIndex"])
+                        lastIndexSync = game["oracleConfirmedBlockIndex"]
                     if self.GameDatabase.existsCoinId(game["coin_id"]) == True:
-                        continue
+                        self.GameDatabase.deleteCoinId(game["coin_id"])
                     self.GameDatabase.insertGameData(gameF)
-                    self.GameDatabase.updateLastIndexSync(game["oracleConfirmedBlockIndex"])
         except Exception as e:
             print("Error syncing history games", e)
+            raise e
+    async def syncOpenGames(self):
+        try:
+            lastIndexSync = self.GameDatabase.getLastIndexSyncOpenGames()
+            print("Last index sync open games", lastIndexSync)
+            openGames = await self.getOpenGames(lastIndexSync)
+            print("Found open games", len(openGames["openGames"]))
+            if openGames["success"]:
+                for game in openGames["openGames"]:
+                    print("processing game", game["coin_id"])
+                    gameF = (
+                            game["parent_coin_info"],
+                            game["coin_id"],
+                            game["puzzleHash"],
+                            game["puzzleReveal"],
+                            game["gameResult"],
+                            game["stage"],
+                            game["stageName"],
+                            game["publicKeyWinner"],
+                            game["publicKeyPlayer1"],
+                            game["publicKeyPlayer2"],
+                            game["compromisePlayer1"],
+                            game["selectionPlayer1"],
+                            game["secretKeyPlayer1"],
+                            game["emojiSelectionPlayer1"],
+                            game["selectionPlayer2"],
+                            game["emojiSelectionPlayer2"],
+                            game["date"],
+                            game["timestamp"],
+                            game["amount"],
+                            game["confirmed_block_index"],
+                            game["spent_block_index"],
+                            game["oracleConfirmedBlockIndex"],
+                            "SPENT" if game["spent_block_index"] != 0 else "UNSPENT"
+
+                        )
+                    if lastIndexSync < game["oracleConfirmedBlockIndex"]:
+                        self.GameDatabase.updateLastIndexSyncOpenGames(game["oracleConfirmedBlockIndex"])
+                        lastIndexSync = game["oracleConfirmedBlockIndex"]
+                    if self.GameDatabase.existsCoinId(game["coin_id"]) == True:
+                        self.GameDatabase.deleteCoinId(game["coin_id"])
+                    self.GameDatabase.insertGameData(gameF)
+        except Exception as e:
+            print("Error syncing open games", e)
             raise e
     async def getLeaderboard(self):
         try:
             topWinners = self.GameDatabase.topWinners()
             topEarners = self.GameDatabase.topEarners()
             return {"success": True, "topWinners": topWinners, "topEarners": topEarners}
+        except Exception as e:
+            return {"success": False, "message": str(e)}
+    async def getOpenGamesDB(self):
+        try:
+            openGames = self.GameDatabase.getOpenGames()
+            return {"success": True, "openGames": openGames}
+        except Exception as e:
+            return {"success": False, "message": str(e)}
+    async def getHistoryGamesDB(self):
+        try:
+            historyGames = self.GameDatabase.getHistoryGames()
+            return {"success": True, "historyGames": historyGames}
+        except Exception as e:
+            return {"success": False, "message": str(e)}
+    async def getGameDetailsDB(self, coinId: str):
+        try:
+            game = self.GameDatabase.getGameDetails(coinId)
+            
+            if game["stage"] == 3:
+                game["selectionPlayer2"] = "Reveal P1 to see"
+                game["emojiSelectionPlayer2"] = self.getEmoji(0)
+            
+            game["puzzleRevealDisassembled"] = disassemble(Program.fromhex(game["puzzleReveal"]))
+            gameCoins = self.GameDatabase.getCoinsChain(coinId)
+            return {"success": True, "game": game, "gameCoins": gameCoins }
+        except Exception as e:
+            return {"success": False, "message": str(e)}
+    async def getUserHistoryGamesDB(self, pubkey: str):
+        try:
+            historyGames = self.GameDatabase.getUserHistoryGames(pubkey)
+            return {"success": True, "historyGames": historyGames}
+        except Exception as e:
+            return {"success": False, "message": str(e)}
+    async def getUserOpenGamesDB(self, pubkey: str):
+        try:
+            openGames = self.GameDatabase.getUserOpenGames(pubkey)
+            return {"success": True, "openGames": openGames}
         except Exception as e:
             return {"success": False, "message": str(e)}
     async def getCoinRecordsByParentIds(self, parentIds: list, includeSpentCoins: bool = False, startHeight: int = None, endHeight: int = None):
@@ -100,7 +197,9 @@ class RPSDriver:
         finally:
             full_node_client.close()
             await full_node_client.await_closed()
-    def calculateCoinId(self, parent_coin_info: str, puzzle_hash: str, amount: uint64):
+    async def calculateCoinId(self, parent_coin_info: str, puzzle_hash: str, amount: uint64):
+        parent_coin_info = parent_coin_info.replace("0x", "")
+        puzzle_hash = puzzle_hash.replace("0x", "")
         coin_id = std_hash(bytes32.fromhex(parent_coin_info) + bytes32.fromhex(puzzle_hash) + int_to_bytes(amount))
         return coin_id.hex()
     async def createSpendJoinPlayer1(self, pubKeyHex:str, coinId:str, fee:int, betAmount:int, selectionHash:str, cashOutAddressHash:str):
@@ -150,40 +249,90 @@ class RPSDriver:
         except Exception as e:
             print("Error creating spend open game", e)
             raise e 
-    async def createSpendJoinPlayer2(self, publicKeyP2Hex:str, coinId:str,coinIdWallet:str, fee:int, selection:int, cashOutAddressHash:str):
+    async def createSolutionClaimGame(self,coinAmount:int,fee:int):
+        solutionGame = Program.to([
+                    1,
+                    1,
+                    self.ACTION_CLAIM_PLAYER2,
+                    coinAmount,
+                    fee])
+        return {"success": True, "solution": SerializedProgram.from_program(solutionGame).to_bytes().hex()}
+    async def createSolutionCloseGame(self,coinAmount:int,fee:int):
+        solutionGame = Program.to([
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    self.ACTION_CLOSE_GAME,
+                    coinAmount,
+                    fee])
+        return {"success": True, "solution": SerializedProgram.from_program(solutionGame).to_bytes().hex()}
+    async def createSolutionRevealGame(self,selection:int,revealKey:str,coinAmount:int):
+        solutionGame = Program.to([
+                    selection,
+                    bytes(revealKey, 'utf-8'),
+                    self.ACTION_REVEAL,
+                    coinAmount,
+                    0])
+        return {"success": True, "solution": SerializedProgram.from_program(solutionGame).to_bytes().hex()}
+    async def createSolutionJoinPlayer1(self,pubKeyHex:str,amount:int,selectionHash:str,cashOutAddressHash:str):
+        try:
+            publicKeyPlayer1 = G1Element.from_bytes(bytes.fromhex(pubKeyHex))
+            PublicOracleMod = self.PUBLIC_ORACLE_MOD.curry(self.SERVER_GAME_PUBLIC_KEY,self.GAME_MOD.get_tree_hash())
+            PlayerOracleMod = self.PLAYER_ORACLE_MOD.curry(self.SERVER_GAME_PUBLIC_KEY,publicKeyPlayer1,self.GAME_MOD.get_tree_hash())
+            WalletPlayerMod = self.GAME_WALLET_MOD.curry(publicKeyPlayer1)
+            GamePlayerMod = self.GAME_MOD.curry(self.GAME_MOD.get_tree_hash(),PublicOracleMod.get_tree_hash(),PlayerOracleMod.get_tree_hash(), WalletPlayerMod.get_tree_hash(),publicKeyPlayer1)
+            targetHash = GamePlayerMod.get_tree_hash()
+            solution = Program.to([
+                self.ACTION_JOIN_PLAYER1,
+                WalletPlayerMod.get_tree_hash(), 
+                amount,
+                0, 
+                targetHash, 
+                amount,
+                bytes.fromhex(selectionHash),
+                bytes.fromhex(cashOutAddressHash),
+                PlayerOracleMod.get_tree_hash()])
+            solutionOpenGame = Program.to([
+                    bytes.fromhex(selectionHash),
+                    bytes.fromhex(cashOutAddressHash),
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    amount,
+                    0])
+            return {"success": True, "message": "", "solutionGameWallet": SerializedProgram.from_program(solution).to_bytes().hex(),"solutionGame": SerializedProgram.from_program(solutionOpenGame).to_bytes().hex()}
+        except Exception as e:
+            return {"success": False, "message": str(e)}
+    async def createSolutionJoinPlayer2(self, publicKeyP2Hex:str, coinId:str, selection:int, cashOutAddressHash:str):
         try:
 
             gameCoin = await self.getCoinRecord(coinId)
             publicKeyPlayer2 = G1Element.from_bytes(bytes.fromhex(publicKeyP2Hex))
             WalletPlayerMod = self.GAME_WALLET_MOD.curry(publicKeyPlayer2)
             player2OracleMod = self.PLAYER_ORACLE_MOD.curry(self.SERVER_GAME_PUBLIC_KEY,publicKeyPlayer2,self.GAME_MOD.get_tree_hash())
-            coinWallet = await self.getCoin(coinIdWallet)
             solutionWallet = Program.to([
                 self.ACTION_JOIN_PLAYER2,
-                coinWallet.puzzle_hash, 
-                coinWallet.amount,
-                fee, 
+                WalletPlayerMod.get_tree_hash(), 
+                gameCoin.coin.amount,
+                0, 
                 gameCoin.coin.puzzle_hash, 
                 gameCoin.coin.amount,
                 selection,
                 bytes.fromhex(cashOutAddressHash),
                 player2OracleMod.get_tree_hash()])
-            spendWallet = CoinSpend(
-                coinWallet,
-                SerializedProgram.from_program(WalletPlayerMod),
-                SerializedProgram.from_program(solutionWallet)
-            )
-
-            puzzleAndSolution = await self.getPuzzleAndSolution(gameCoin.coin.parent_coin_info.hex(), gameCoin.confirmed_block_index)
-            infoSolutionParams = await self.getSolutionParams(puzzleAndSolution.solution.to_program())
-            infoStage = await self.getGameStageParsed(puzzleAndSolution.puzzle_reveal.to_program().uncurry()[1],infoSolutionParams["params"])
-            gameParams = await self.getGameParams(infoStage["stage"],infoStage["curriedParams"],infoSolutionParams["params"])
-            publicOracleCoin,player1OracleCoin,player2OracleCoin = await self.getGameOracleCoins(gameCoin,std_hash(infoStage["GameMod"].get_tree_hash()).hex(),gameParams["publicKeyPlayer1"])
-
-            player2WalletMod = self.GAME_WALLET_MOD.curry(publicKeyPlayer2)
+           
                 
             solutionGame = Program.to([
-                    player2WalletMod.get_tree_hash(),
+                    WalletPlayerMod.get_tree_hash(),
                     publicKeyPlayer2,
                     selection,
                     bytes.fromhex(cashOutAddressHash),
@@ -192,12 +341,63 @@ class RPSDriver:
                     0,
                     self.ACTION_JOIN_PLAYER2,
                     gameCoin.coin.amount,
-                    fee])
-            spendGame = CoinSpend(
-                gameCoin.coin,
-                SerializedProgram.from_program(infoStage["GameMod"]),
-                SerializedProgram.from_program(solutionGame)
-            )
+                    0])
+            
+            return {"success": True, "message": "", "solutionGameWallet": SerializedProgram.from_program(solutionWallet).to_bytes().hex(),"solutionGame": SerializedProgram.from_program(solutionGame).to_bytes().hex()}
+        except Exception as e:
+            print("Error creating spend open game", e)
+            raise e
+    async def createSpendJoinPlayer2(self, publicKeyP2Hex:str, coinId:str,parentIdWallet:str, fee:int, selection:int, cashOutAddressHash:str):
+        try:
+            gameCoin = await self.getCoinRecord(coinId)
+            # publicKeyPlayer2 = G1Element.from_bytes(bytes.fromhex(publicKeyP2Hex))
+            # WalletPlayerMod = self.GAME_WALLET_MOD.curry(publicKeyPlayer2)
+            # player2OracleMod = self.PLAYER_ORACLE_MOD.curry(self.SERVER_GAME_PUBLIC_KEY,publicKeyPlayer2,self.GAME_MOD.get_tree_hash())
+            # coinWallet = Coin(
+            #     bytes32.fromhex(parentIdWallet),
+            #     WalletPlayerMod.get_tree_hash(),
+            #     uint64(gameCoin.coin.amount)
+            # )
+            # solutionWallet = Program.to([
+            #     self.ACTION_JOIN_PLAYER2,
+            #     WalletPlayerMod.get_tree_hash(), 
+            #     gameCoin.coin.amount,
+            #     fee, 
+            #     gameCoin.coin.puzzle_hash, 
+            #     gameCoin.coin.amount,
+            #     selection,
+            #     bytes.fromhex(cashOutAddressHash),
+            #     player2OracleMod.get_tree_hash()])
+            # spendWallet = CoinSpend(
+            #     coinWallet,
+            #     SerializedProgram.from_program(WalletPlayerMod),
+            #     SerializedProgram.from_program(solutionWallet)
+            # )
+
+            puzzleAndSolution = await self.getPuzzleAndSolution(gameCoin.coin.parent_coin_info.hex(), gameCoin.confirmed_block_index)
+            infoSolutionParams = await self.getSolutionParams(puzzleAndSolution.solution.to_program())
+            infoStage = await self.getGameStageParsed(puzzleAndSolution.puzzle_reveal.to_program().uncurry()[1],infoSolutionParams["params"])
+            gameParams = await self.getGameParams(infoStage["stage"],infoStage["curriedParams"],infoSolutionParams["params"])
+            publicOracleCoin,player1OracleCoin,player2OracleCoin = await self.getGameOracleCoins(gameCoin,std_hash(infoStage["GameMod"].get_tree_hash()).hex(),gameParams["publicKeyPlayer1"])
+
+            # player2WalletMod = self.GAME_WALLET_MOD.curry(publicKeyPlayer2)
+                
+            # solutionGame = Program.to([
+            #         player2WalletMod.get_tree_hash(),
+            #         publicKeyPlayer2,
+            #         selection,
+            #         bytes.fromhex(cashOutAddressHash),
+            #         player2OracleMod.get_tree_hash(),
+            #         0,
+            #         0,
+            #         self.ACTION_JOIN_PLAYER2,
+            #         gameCoin.coin.amount,
+            #         fee])
+            # spendGame = CoinSpend(
+            #     gameCoin.coin,
+            #     SerializedProgram.from_program(infoStage["GameMod"]),
+            #     SerializedProgram.from_program(solutionGame)
+            # )
             publicOracleMod = self.PUBLIC_ORACLE_MOD.curry(self.SERVER_GAME_PUBLIC_KEY,self.GAME_MOD.get_tree_hash())
             solutionPublicOracle = Program.to([gameCoin.coin.name()])
             spendPublicOracle = CoinSpend(
@@ -212,33 +412,34 @@ class RPSDriver:
                 SerializedProgram.from_program(player1OracleMod),
                 SerializedProgram.from_program(solutionPlayerOracle)
             )
-            return [spendWallet,spendGame,spendPublicOracle,spendPlayerOracle]
+            return [spendPublicOracle,spendPlayerOracle]
         except Exception as e:
             print("Error creating spend open game", e)
             raise e
-    async def joinPlayer2(self,publicKeyP2Hex:str, coinId:str,coinIdWallet:str, fee:int, selection:str, cashOutAddressHash:str, signature:str):
+    async def joinPlayer2(self,spendBundle,publicKeyP2Hex:str, coinId:str,parentIdWallet:str, fee:int, selection:str, cashOutAddressHash:str, signature:str):
         try:
-            spend = await self.createSpendJoinPlayer2(publicKeyP2Hex, coinId,coinIdWallet, fee, selection, cashOutAddressHash)
-            gameCoin = spend[1].coin
-            publicOracleCoin = spend[2].coin
-            playerOracleCoin = spend[3].coin
+            spend = await self.createSpendJoinPlayer2(publicKeyP2Hex, coinId,parentIdWallet, fee, selection, cashOutAddressHash)
+            fullSpendBundle = spend + spendBundle.coin_spends
+            #gameCoin = spend[1].coin
+            publicOracleCoin = spend[-2].coin
+            playerOracleCoin = spend[-1].coin
 
             signature_bytes = bytes.fromhex(signature)
             signatureP2 = G2Element.from_bytes(signature_bytes)
 
             signServerPublic: G2Element = AugSchemeMPL.sign(self.SERVER_GAME_PRIVATE_KEY,
-                            std_hash(gameCoin.name())
+                            std_hash(bytes.fromhex(coinId))
                             + publicOracleCoin.name()
                             + self.GENESIS_CHALLENGE
                         )
             signServerPlayer1: G2Element = AugSchemeMPL.sign(self.SERVER_GAME_PRIVATE_KEY,
-                            std_hash(gameCoin.name())
+                            std_hash(bytes.fromhex(coinId))
                             + playerOracleCoin.name()
                             + self.GENESIS_CHALLENGE
                         )
             signaturaGame = G2Element()
             aggregated_signature = AugSchemeMPL.aggregate([signatureP2, signServerPublic,signServerPlayer1,signaturaGame])
-            spend_bundle = SpendBundle(spend, aggregated_signature)
+            spend_bundle = SpendBundle(fullSpendBundle, aggregated_signature)
             status = await self.pushTx(spend_bundle)
             if status["success"] == False:
                 return {"success": False, "message": self.parseError(status["message"])}
@@ -280,36 +481,58 @@ class RPSDriver:
             full_node_client.close()
             await full_node_client.await_closed()
     #TODO: Remove hadouken
-    async def getOpenGames(self):
+    async def getOpenGames(self, startHeight: int = None):
         try:
             PublicOracleMod = self.PUBLIC_ORACLE_MOD.curry(self.SERVER_GAME_PUBLIC_KEY,self.GAME_MOD.get_tree_hash())
             openGames = []
-            listOracleCoins = await self.getUnspentCoins(PublicOracleMod.get_tree_hash().hex())
+            listOracleCoins = await self.getUnspentCoins(PublicOracleMod.get_tree_hash().hex(),startHeight)
             for oracleCoin in listOracleCoins:
                 parentCoin = await self.getCoinRecord(oracleCoin.coin.parent_coin_info.hex())
                 infoStageParent = await self.getGameStageInfo(parentCoin)
-                gameCoin = await self.getCoinRecordByHint(oracleCoin.confirmed_block_index,std_hash(infoStageParent["GameMod"].get_tree_hash()).hex(),False)
-                if gameCoin == None:
-                    raise Exception("Game coin not found")
-                gameCoin = [coin for coin in gameCoin if coin.coin.amount != 0][0]
-                infoStage = await self.getGameStageInfo(gameCoin)
-                formatedCoin = { 
-                    'parent_coin_info': gameCoin.coin.parent_coin_info.hex(),
-                    'puzzle_hash': gameCoin.coin.puzzle_hash.hex(),
-                    'amount': gameCoin.coin.amount,
-                    'coin_id': gameCoin.coin.name().hex(),
-                    'confirmed_block_index': gameCoin.confirmed_block_index,
-                    'spent_block_index': gameCoin.spent_block_index,
-                    'timestamp': gameCoin.timestamp,
-                    'date': datetime.datetime.fromtimestamp(gameCoin.timestamp).strftime('%d %b %Y %H:%M') + " hrs",
-                    'coinbase': gameCoin.coinbase,
-                    'timestamp': gameCoin.timestamp,
-                    'compromisePlayer1': infoStage["gameParams"]["compromisePlayer1"],
-                    'puzzleHashPlayer1': infoStage["gameParams"]["puzzleHashPlayer1"],
-                    'stage': infoStage["stage"],
-                    'stageName': infoStage["stageName"],
-                }
-                openGames.append(formatedCoin)
+                gameCoin = []
+                if oracleCoin.spent_block_index == 0:
+                    gameCoin = await self.getCoinRecordByHint(oracleCoin.confirmed_block_index,std_hash(infoStageParent["GameMod"].get_tree_hash()).hex(),False)
+                
+                if len(gameCoin) <= 2:
+                    continue
+                coin = parentCoin if len(gameCoin) <= 2 else [c for c in gameCoin if c.coin.amount != 0][0]
+                info = infoStageParent if len(gameCoin) == 0 else await self.getGameStageInfo(coin)
+                await self.sendNotificationtoPubkey(info["gameParams"]["publicKeyPlayer1"],"Game update",info["stageName"],"https://chiarps.mrdennis.dev/gameDetails/"+coin.coin.name().hex())
+                await self.sendNotificationtoPubkey(info["gameParams"]["publicKeyPlayer2"],"Game update",info["stageName"],"https://chiarps.mrdennis.dev/gameDetails/"+coin.coin.name().hex())
+                publicKeyP1 = G1Element.from_bytes(bytes.fromhex(info["gameParams"]["publicKeyPlayer1"]))
+                player1WalletMod = self.GAME_WALLET_MOD.curry(publicKeyP1)
+                gameParentCoins = await self.getGameParentCoins(coin,player1WalletMod)
+                for gameCoin in gameParentCoins:
+                    infoStage = await self.getGameStageInfo(gameCoin)
+                    formatedCoin = { 
+                        'parent_coin_info': gameCoin.coin.parent_coin_info.hex(),
+                        'puzzle_hash': gameCoin.coin.puzzle_hash.hex(),
+                        'amount': gameCoin.coin.amount,
+                        'coin_id': gameCoin.coin.name().hex(),
+                        'confirmed_block_index': gameCoin.confirmed_block_index,
+                        'spent_block_index': gameCoin.spent_block_index,
+                        'coinbase': gameCoin.coinbase,
+                        'timestamp': gameCoin.timestamp,
+                        'date': datetime.datetime.fromtimestamp(gameCoin.timestamp).strftime('%d %b %Y %H:%M') + " hrs",
+                        'compromisePlayer1': infoStage["gameParams"]["compromisePlayer1"],
+                        'puzzleHashPlayer1': infoStage["gameParams"]["puzzleHashPlayer1"],
+                        'publicKeyPlayer1': infoStage["gameParams"]["publicKeyPlayer1"],
+                        'publicKeyPlayer2': infoStage["gameParams"]["publicKeyPlayer2"],
+                        'selectionPlayer1': infoStage["gameParams"]["selectionPlayer1"],
+                        'selectionPlayer2': infoStage["gameParams"]["selectionPlayer2"],
+                        "secretKeyPlayer1": infoStage["gameParams"]["secretKeyPlayer1"],
+                        "emojiSelectionPlayer1": infoStage["gameParams"]["emojiSelectionPlayer1"],
+                        "emojiSelectionPlayer2": infoStage["gameParams"]["emojiSelectionPlayer2"],
+                        'gameResult': infoStage["gameResult"],
+                        'stage': infoStage["stage"],
+                        'publicKeyWinner': infoStage["publicKeyWinner"],
+                        'stageName': infoStage["stageName"],
+                        'oracleConfirmedBlockIndex': gameCoin.confirmed_block_index,
+                        'puzzleHash': infoStage["GameMod"].get_tree_hash().hex(),
+                        'puzzleReveal': infoStage["GameMod"].__str__()
+
+                    }
+                    openGames.append(formatedCoin)
             return {"success": True, "openGames": openGames}
         except Exception as e:
             return {"success": False, "message": str(e)}
@@ -384,29 +607,41 @@ class RPSDriver:
             for oracleCoin in listOracleCoins:
                 parentCoin = await self.getCoinRecord(oracleCoin.coin.parent_coin_info.hex())
                 infoStage = await self.getGameStageInfo(parentCoin)
-                formatedCoin = { 
-                    'parent_coin_info': parentCoin.coin.parent_coin_info.hex(),
-                    'puzzle_hash': parentCoin.coin.puzzle_hash.hex(),
-                    'amount': parentCoin.coin.amount,
-                    'coin_id': parentCoin.coin.name().hex(),
-                    'confirmed_block_index': parentCoin.confirmed_block_index,
-                    'spent_block_index': parentCoin.spent_block_index,
-                    'coinbase': parentCoin.coinbase,
-                    'timestamp': parentCoin.timestamp,
-                    'date': datetime.datetime.fromtimestamp(parentCoin.timestamp).strftime('%d %b %Y %H:%M') + " hrs",
-                    'compromisePlayer1': infoStage["gameParams"]["compromisePlayer1"],
-                    'puzzleHashPlayer1': infoStage["gameParams"]["puzzleHashPlayer1"],
-                    'publicKeyPlayer1': infoStage["gameParams"]["publicKeyPlayer1"],
-                    'publicKeyPlayer2': infoStage["gameParams"]["publicKeyPlayer2"],
-                    'selectionPlayer1': infoStage["gameParams"]["selectionPlayer1"],
-                    'selectionPlayer2': infoStage["gameParams"]["selectionPlayer2"],
-                    'gameResult': infoStage["gameResult"],
-                    'stage': infoStage["stage"],
-                    'publicKeyWinner': infoStage["publicKeyWinner"],
-                    'stageName': infoStage["stageName"],
-                    'oracleConfirmedBlockIndex': oracleCoin.confirmed_block_index,
-                }
-                historyGames.append(formatedCoin)
+                await self.sendNotificationtoPubkey(infoStage["gameParams"]["publicKeyPlayer1"],"Your game has ended", "Game result: " + infoStage["gameResult"],"https://chiarps.mrdennis.dev/gameDetails/"+parentCoin.coin.name().hex())
+                await self.sendNotificationtoPubkey(infoStage["gameParams"]["publicKeyPlayer2"],"Your game has ended", "Game result: " + infoStage["gameResult"],"https://chiarps.mrdennis.dev/gameDetails/"+parentCoin.coin.name().hex())
+                publicKeyP1 = G1Element.from_bytes(bytes.fromhex(infoStage["gameParams"]["publicKeyPlayer1"]))
+                player1WalletMod = self.GAME_WALLET_MOD.curry(publicKeyP1)
+                gameParentCoins = await self.getGameParentCoins(parentCoin,player1WalletMod)
+                for gameCoin in gameParentCoins:
+                    infoStage = await self.getGameStageInfo(gameCoin)
+                    formatedCoin = { 
+                        'parent_coin_info': gameCoin.coin.parent_coin_info.hex(),
+                        'puzzle_hash': gameCoin.coin.puzzle_hash.hex(),
+                        'amount': gameCoin.coin.amount,
+                        'coin_id': gameCoin.coin.name().hex(),
+                        'confirmed_block_index': gameCoin.confirmed_block_index,
+                        'spent_block_index': gameCoin.spent_block_index,
+                        'coinbase': gameCoin.coinbase,
+                        'timestamp': gameCoin.timestamp,
+                        'date': datetime.datetime.fromtimestamp(gameCoin.timestamp).strftime('%d %b %Y %H:%M') + " hrs",
+                        'compromisePlayer1': infoStage["gameParams"]["compromisePlayer1"],
+                        'puzzleHashPlayer1': infoStage["gameParams"]["puzzleHashPlayer1"],
+                        'publicKeyPlayer1': infoStage["gameParams"]["publicKeyPlayer1"],
+                        'publicKeyPlayer2': infoStage["gameParams"]["publicKeyPlayer2"],
+                        'selectionPlayer1': infoStage["gameParams"]["selectionPlayer1"],
+                        'selectionPlayer2': infoStage["gameParams"]["selectionPlayer2"],
+                        "secretKeyPlayer1": infoStage["gameParams"]["secretKeyPlayer1"],
+                        "emojiSelectionPlayer1": infoStage["gameParams"]["emojiSelectionPlayer1"],
+                        "emojiSelectionPlayer2": infoStage["gameParams"]["emojiSelectionPlayer2"],
+                        'gameResult': infoStage["gameResult"],
+                        'stage': infoStage["stage"],
+                        'publicKeyWinner': infoStage["publicKeyWinner"],
+                        'stageName': infoStage["stageName"],
+                        'oracleConfirmedBlockIndex': oracleCoin.confirmed_block_index,
+                        'puzzleHash': infoStage["GameMod"].get_tree_hash().hex(),
+                        'puzzleReveal': infoStage["GameMod"].__str__()
+                    }
+                    historyGames.append(formatedCoin)
             return {"success": True, "historyGames": historyGames}
         except Exception as e:
             return {"success": False, "message": str(e)}
@@ -676,7 +911,11 @@ class RPSDriver:
             coin = await full_node_client.get_mempool_items_by_coin_name(bytes32.fromhex(coinId))
             if coin and coin['mempool_items']:
                 spend_bundle = coin['mempool_items'][0]['spend_bundle']
-                coin_spends = spend_bundle['coin_spends'][0]
+                coin_spends = None
+                for coin_spend in spend_bundle['coin_spends']:
+                    if await self.calculateCoinId(coin_spend['coin']['parent_coin_info'], coin_spend['coin']['puzzle_hash'], coin_spend['coin']['amount']) == coinId:
+                        coin_spends = coin_spend
+                        break
                 
                 curriedParams = await self.getPuzzleRevealCurriedParams(Program.fromhex(coin_spends['puzzle_reveal']).uncurry()[1])
                 solutionParams = await self.getSolutionParams(Program.fromhex(coin_spends['solution']))
@@ -934,6 +1173,7 @@ class RPSDriver:
             Response["puzzleHashPlayer1"] = ""
             Response["selectionPlayer2"] = "----"
             Response["emojiSelectionPlayer2"] = self.getEmoji(0)
+            Response["emojiSelectionPlayer1"] = self.getEmoji(0)
             Response["puzzleHashPlayer2"] = "----"
             Response["player2OraclePuzzleHash"] = ""
             Response["selectionPlayer1"] = ""
@@ -948,7 +1188,7 @@ class RPSDriver:
                 Response["player2WalletPuzzleHash"] = solutionParams[0]
                 Response["publicKeyPlayer2"] = solutionParams[1]
                 Response["selectionPlayer2"] = solutionParams[2]
-                Response["emojiSelectionPlayer2"] = self.getEmoji(int(solutionParams[2], 16) )
+                Response["emojiSelectionPlayer2"] = self.getEmoji(int(solutionParams[2], 16) if solutionParams[2].isdigit() else 0)
                 Response["puzzleHashPlayer2"] = solutionParams[3]
                 Response["player2OraclePuzzleHash"] = solutionParams[4]
             elif stage == 4:
@@ -957,10 +1197,11 @@ class RPSDriver:
                 Response["player2WalletPuzzleHash"] = curriedParams[7]
                 Response["publicKeyPlayer2"] = curriedParams[8]
                 Response["selectionPlayer2"] = curriedParams[9]
-                Response["emojiSelectionPlayer2"] = self.getEmoji(int(curriedParams[9], 16) )
+                Response["emojiSelectionPlayer2"] = self.getEmoji(int(curriedParams[9], 16) if curriedParams[9].isdigit() else 0)
                 Response["puzzleHashPlayer2"] = curriedParams[10]
                 Response["player2OraclePuzzleHash"] = curriedParams[11]
                 Response["selectionPlayer1"] = solutionParams[0]
+                Response["emojiSelectionPlayer1"] = self.getEmoji(int(solutionParams[0], 16) if solutionParams[0].isdigit() else 0)
                 Response["secretKeyPlayer1"] = solutionParams[1]
             return Response
         except Exception as e:
@@ -998,6 +1239,7 @@ class RPSDriver:
             if len(curriedParams) == 5:
                 stage = 2
                 stageName = "Waiting for player 2"
+                
                 newCurriedParams = curriedParams
                 newCurriedParams.append(solutionParams[0])
                 newCurriedParams.append(solutionParams[1])
@@ -1431,6 +1673,13 @@ class RPSDriver:
         finally:
             full_node_client.close()
             await full_node_client.await_closed()
+    async def encodeDID(self, coinId:str):
+        try:
+            DID = encode_puzzle_hash(bytes.fromhex(coinId), "did:chia:")
+            return DID
+        except Exception as e:
+            return {"success": False, "message": str(e)}
+      
     async def configNetwork(self):
         network_info_result = await self.getNetworkInfo()
         if network_info_result["success"]:
@@ -1443,3 +1692,58 @@ class RPSDriver:
                 self.GENESIS_CHALLENGE = bytes.fromhex("37a90eb5185a9c4439a91ddc98bbadce7b4feba060d50116a067de66bf236615")
                 self.GENESIS_CHALLENGE_HEX = self.GENESIS_CHALLENGE.hex()
                 self.IS_MAINNET = False
+    def convertJsonToSpendBundle(self, jsonSpendBundle:dict):
+        try:
+            coin_spends = []
+            for coin_spend in jsonSpendBundle["coin_spends"]:
+                coin = Coin(
+                    bytes.fromhex(coin_spend["coin"]["parent_coin_info"].replace("0x", "")),
+                    bytes.fromhex(coin_spend["coin"]["puzzle_hash"].replace("0x", "")),
+                    uint64(coin_spend["coin"]["amount"])
+                )
+                puzzle_reveal = SerializedProgram.fromhex(coin_spend["puzzle_reveal"])
+                solution = SerializedProgram.fromhex(coin_spend["solution"])
+                coin_spends.append(CoinSpend(coin, puzzle_reveal, solution))
+
+            aggregated_signature = G2Element.from_bytes(bytes.fromhex(jsonSpendBundle["aggregated_signature"][0]))
+
+            spend_bundle = SpendBundle(coin_spends, aggregated_signature)
+            return spend_bundle
+        except Exception as e:
+            return SpendBundle([], G2Element())
+    async def setMyName(self, pubkey: str, message: str, signature: str, name: str):
+        try:
+            message = f"Set name: {name}"
+            verification_result = await self.verifySignatureLogin(pubkey, message, signature, "BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_AUG:CHIP-0002_", "")
+            if verification_result["success"]:
+                self.GameDatabase.setUserName(pubkey, name)
+                return {"success": True, "message": "Name updated and signature verified"}
+            else:
+                return {"success": False, "message": "Signature verification failed"}
+        except Exception as e:
+            return {"success": False, "message": str(e)}
+    async def getUserName(self, pubkey: str):
+        try:
+            name = self.GameDatabase.getUserName(pubkey)
+            if len(name) > 30:
+                return {"success": True, "name": name[:30]+"...", "fullname": name}
+            return {"success": True, "name": name}
+        except Exception as e:
+            return {"success": False, "message": str(e)}
+    async def registerFirebaseToken(self, pubkey: str, token: str):
+        try:
+            self.GameDatabase.setFirebaseToken(pubkey, token)
+            return {"success": True, "message": "Token registered"}
+        except Exception as e:
+            return {"success": False, "message": str(e)}
+    async def sendNotificationtoPubkey(self, pubkey: str, title: str, body: str , action_url: str):
+        token = self.GameDatabase.getTokenFromPublicKey(pubkey)
+        if token is None or token == "":
+            return {"success": False, "message": "Token not found"}
+        await self.Firebase.send_notification(
+                token=token,
+                title=title,
+                message=body,
+                action_url=action_url,
+                additional_data=None
+            )

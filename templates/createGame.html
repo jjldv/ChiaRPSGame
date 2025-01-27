@@ -67,140 +67,124 @@
         </nav>
 
     </header>
-    <main class="container mt-4" style="margin-top: 10px !important;">
-        <div class="container my-5" style="margin-top: -6px !important;">
-            <div class="row">
-                <div class="col-md-8">
-                    <div class="wallet-container text-center wallet-info">
-                        <i class="fas fa-wallet fa-5x"></i>
-                        <p></p>
-                        <button class="btn btn-success btn " onclick="UserSession.chargeWallet()">
-                            <i class="fas fa-coins"></i> Charge
-                        </button>
-
-                        <div class="wallet-balance  ">
-                            <h2><p id="walletBalance">----</p></h2>
-                            <p>In <span id="numberCoins">-</span> coin(s)</p>
+    <main class="container mt-4">
+        <div class="row">
+            <div class="col-md-10 mx-auto">
+                <div class="game-container">                    
+                    <div class="wallet-info text-center">
+                        <i class="fas fa-wallet fa-3x mb-3"></i>
+                        <h3 id="walletBalance">----</h3>
+                        <p class="mb-1">User Public Key</p>
+                        <div class="d-flex align-items-center justify-content-center">
+                            <span id="playerPubKey" class="truncate public-key" title="Click to copy">----</span>
+                            <i class="fas fa-copy copy-icon" onclick="Utils.copyToClipboard('#playerPubKey')"></i>
                         </div>
-                        <div class="wallet-info">
-                            <p class="text-center" style="margin-bottom: 0px;">User DID</p>
-                            <p style="text-align: center; overflow-x: auto; margin-top: -6px !important;" id="playerDID">----</p>
-                            <p class="text-center" style="margin-bottom: 0px;">User Public Key</p>
-                            <p style="text-align: center; overflow-x: auto; margin-top: -6px !important; font-size: 11px;" id="playerPubKey">----</p>
-                            <p style="margin-bottom: 0px;">Wallet Address:</p>
-                            <p id="walletAddress" style="overflow-x: auto;margin-top: -6px !important;">----</p>
-                            <p style="margin-bottom: 0px;">Wallet Puzzle Hash:</p>
-                            <p id="walletPuzzleHash" style="overflow-x: auto;margin-top: -6px !important;">----</p>
+                        <p class="mb-1 mt-2">Wallet Address:</p>
+                        <div class="d-flex align-items-center justify-content-center">
+                            <span id="walletAddress" class="truncate wallet-address" title="Click to copy">----</span>
+                            <i class="fas fa-copy copy-icon" onclick="Utils.copyToClipboard('#walletAddress')"></i>
                         </div>
                     </div>
-                    <br>
-                    <div id="joinPlayer1Cointainer" style="text-align: center; border-style: solid; padding: 10px;">
-                        <h3>Create Game</h3>
-                        <div class="coin-select form-group">
-                            <label for="coinIdSelect">Select a coin to create Game:</label>
-                            <select id="coinIdSelect" class="form-select">
-                                <option value="">Select a coin to create game</option>
-                            </select>
+
+                    <div id="joinPlayer1Cointainer">
+                        <h3 class="text-center mb-3">Create New Game</h3>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="betAmount">Bet Amount (<span class="currency"></span>)</label>
+                                    <input type="number" class="form-control" id="betAmount" placeholder="Enter bet amount" min="0.000000000001" step="0.000000000001">
+                                    <input type="number" class="form-control" id="feeSpendbundle" value="0" min="0.000000000001" step="0.000000000001" style="display: none;">
+
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="feeSelector">Network Fee (<span class="currency"></span>)</label>
+                                    <div id="feeSelectorContainer"></div>
+                                </div>
+                            </div>
+                            <div class="mt-2" id="balanceValidationMessage"></div>
                         </div>
-                        <div class="form-group">
-                            <label for="feeSpendbundle">Calculated Fee for 60 seconds:</label>
-                            <input type="number" class="form-control" id="feeSpendbundle"  value="0" min="0.000000000001" step="0.000000000001">
+                        
+                        <div class="form-group mb-3">
+                            <label style="text-align: center;width: 100%;">Your Selection:</label>
+                            <div class="rps-selection">
+                                <div class="rps-option" onclick="selectOption(1, this)" id="rock-option" data-value="1">
+                                    <span class="rps-icon">🪨</span>
+                                    <span class="rps-label">Rock</span>
+                                </div>
+                                <div class="rps-option" onclick="selectOption(2, this)" id="paper-option" data-value="2">
+                                    <span class="rps-icon">📄</span>
+                                    <span class="rps-label">Paper</span>
+                                </div>
+                                <div class="rps-option" onclick="selectOption(3, this)" id="scissors-option" data-value="3">
+                                    <span class="rps-icon">✂️</span>
+                                    <span class="rps-label">Scissors</span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label for="betAmount">Bet Amount:</label>
-                            <input type="number" class="form-control" id="betAmount" placeholder="Enter the bet amount" min="0.000000000001" step="0.000000000001">
+                        
+                        <div class="form-group mb-3">
+                            <label for="keyRPS" style="width: 100%; text-align: center;">
+                                Secret Key
+                                <i class="fas fa-info-circle" 
+                                   data-mdb-toggle="tooltip" 
+                                   data-mdb-placement="top" 
+                                   title="This key encrypts your choice on the blockchain. Keep it safe - you'll need it to reveal your selection when the game ends.">
+                                </i>
+                            </label>
+                            <input type="text" class="form-control" id="keyRPS" placeholder="Enter a secret key">
                         </div>
-                        <div class="form-group">
-                            <label for="amountChangeCoin">Change to Wallet Coin:</label>
-                            <p id="amountChangeCoin">----</p>
+                        
+                        <div class="form-group mb-3">
+                            <label for="selectionRPSHash" style="width: 100%; text-align: center;">
+                                Selection Hash
+                                <i class="fas fa-info-circle" 
+                                   data-mdb-toggle="tooltip" 
+                                   data-mdb-placement="top" 
+                                   title="This hash represents your encrypted selection. It will be saved automatically as a JSON file when you create the game and stored in local storage in your browser. Keep the downloaded JSON file safe and private.">
+                                </i>
+                            </label>
+                            <input type="text" class="form-control" id="selectionRPSHash" readonly>
                         </div>
-                        <div class="form-group">
-                            <label for="RPSSelect">Select 🪨 📄 or ✂️:</label>
-                            <select id="RPSSelect" class="form-select">
-                                <option value="">Choose your option</option>
-                                <option value="1">🪨 Rock</option>
-                                <option value="2">📄 Paper</option>
-                                <option value="3">✂️ Scissors</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="keyRPS" title="This is used to hide your selection of rock, paper, or scissors to start the game and commit your selection, which you will need to reveal later to conclude the game.">Set your key:</label>
-                            <p>This is used to hide your selection of rock, paper, or scissors to start the game and commit your selection, which you will need to reveal later to conclude the game. PLEASE SAVE THIS KEY LINKED TO YOUR SELECTION!</p>
-                            <input type="text" class="form-control" id="keyRPS" placeholder="Enter your key.. ex: MiKeySecure">
-                        </div>
-                        <div class="form-group">
-                            <label for="selectionRPSHash">Selection Hash:</label>
-                            <input type="text" class="form-control" id="selectionRPSHash"  readonly >
-                        </div>
-                        <div class="form-group">
-                            <label for="cashOutAddress">Cash Out Address:</label>
-                            <input type="text" class="form-control" id="cashOutAddress"   >
-                        </div>
-                        <div class="form-group position-relative">
-                            <label class="customLabel">Sign the message to add the spendbundle</label>
-                            <p>You are signing:</p>
-                            <p style="overflow-x: auto;margin-top: -20px !important;">actionCreteGame(1)+betAmount+fee+GameHash+Selection+walletPlayerHash+playerOracleHash+CoinId+GenesisChallenge</p>
-                            <pre class="precustom"><code id="cmdSingByDID" >chia rpc wallet sign_message_by_id '{"id":"<span id="didCmdSingature"></span>","message":"<span id="didCmdMessageSingature"></span>","is_hex":"True","safe_mode":"False"}'</code>
-                            </pre>
-                            <button type="button" class="btn position-absolute copy-btn" style="top: 74px; "
-                                onclick="Utils.copyToClipboard('#cmdSingByDID')">
-                                <i class="fas fa-copy"></i>
-                            </button>
-                        </div>
-                        <div class="form-group">
-                            <label for="signatureSpendbundle">Signature:</label>
-                            <input type="text" class="form-control" id="signatureSpendbundle" placeholder="Enter the signature">
-                        </div>
-                        <br>
-                        <button  class="btn btn-primary btn-lg" onclick="joinPlayer1()">
-                            <i class="fas fa-money-bill"></i> Create Game
+                        
+                        
+                        <button class="btn btn-primary btn-lg w-100" onclick="joinPlayer1()">
+                            <i class="fas fa-play-circle"></i> Create Game
                         </button>
                     </div>
 
-                    <div class="form-group" style="position: relative;">
-                        <h5 style="text-align: center;">Pending Transactions</h5>
-                        <div class="row" id="pendingTransactions">
+                    <div class="mt-4">
+                        <h5 class="text-center">Pending Transactions</h5>
+                        <div id="pendingTransactions" class="row">
                         </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="wallet-info">
-                        <p style="text-align: center;">Wallet Puzzle Reveal:</p>
-                        <p>
-                            <textarea style="min-height: 200px;" id="walletPuzzleReveal" class="form-control">----</textarea>
-                        </p>
-                        <p style="text-align: center;">Wallet Puzzle Reveal Disassembled:</p>
-                        <p>
-                            <textarea style="min-height: 200px;" id="walletPuzzleRevealDisassembled" class="form-control">----</textarea>
-                        </p>
-                    </div>
-                    <div class="game-info">
-                        <p style="text-align: center;">Game Puzzle Reveal:</p>
-                        <p>
-                            <textarea style="min-height: 200px;" id="gamePuzzleReveal" class="form-control">----</textarea>
-                        </p>
-                        <p style="text-align: center;">Game Puzzle Reveal Disassembled:</p>
-                        <p>
-                            <textarea style="min-height: 200px;" id="gamePuzzleRevealDisassembled" class="form-control">----</textarea>
-                        </p>
                     </div>
                 </div>
             </div>
         </div>
     </main>
-    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js";
+        import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-messaging.js";
+        window.firebaseModules = { initializeApp, getMessaging, getToken };
+    </script>
     <script src="/static/js/libs/qrcode.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/7.0.0/mdb.umd.min.js"></script>
+    <script src="/static/js/libs/greenweb.js"></script>
+    <script src="/static/js/Firebase.js"></script>
+    <script src="/static/js/Goby.js"></script>
+    <script src="/static/js/libs/mdb.umd.min.js"></script>
     <script src="https://unpkg.com/@walletconnect/sign-client@2.10.6/dist/index.umd.js"></script>
     <script src="https://unpkg.com/@walletconnect/types@2.0.0-beta.55/dist/umd/index.min.js"></script>
     <script src="https://unpkg.com/@walletconnect/utils@2.0.0-beta.55/dist/umd/index.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script src="/static/js/Utils.js"></script>
     <script src="/static/js/ModalGeneric.js"></script>
-    <script src="/static/js/ModalChiaWalletConnect.js"></script>
-    <script src="/static/js/ChiaWalletConnect.js"></script>
+    <script src="/static/js/ModalGobyWallet.js"></script>
     <script src="/static/js/Session.js"></script>
+    <script src="/static/js/FeeSelector.js"></script>
     <script src="/static/js/createGame.js"></script>
+    
 </body>
 
 </html>

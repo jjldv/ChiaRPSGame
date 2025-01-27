@@ -202,4 +202,19 @@ class Utils {
             return { success: false, message: "Error getting blockchain state" };
         }
     }
+    static async getUserName(pubkey) {
+        try {
+            const response = await Utils.fetch("/getUserName", { pubkey });
+            return response;
+        } catch (error) {
+            return { success: false, message: "Error getting username" };
+        }
+    }
+
+    static utf8ToHex(str) {
+        return Array.from(str).map(c => 
+            c.charCodeAt(0).toString(16).padStart(2, '0')
+        ).join('');
+    }
+    
 }

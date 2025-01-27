@@ -1,3 +1,5 @@
+import time
+import datetime
 import os
 from fastapi import Body, FastAPI, Request, HTTPException, Response
 from fastapi.responses import JSONResponse
@@ -16,16 +18,37 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # Function to sync history games periodically
 async def syncHistoryGames():
     while True:
+        start_time = time.time()
         try:
+            print("Initiating sync history games")
             await Driver.syncHistoryGames()
             print("syncHistoryGames executed successfully")
         except Exception as e:
             print(f"Error during syncHistoryGames: {e}")
-        await asyncio.sleep(60)  
+            
+        # Calculate time elapsed and wait remaining time if any
+        elapsed = time.time() - start_time
+        wait_time = max(30 - elapsed, 0)
+        await asyncio.sleep(wait_time)
+async def syncOpenGames():
+    while True:
+        start_time = time.time()
+        try:
+            print("Initiating sync open games")
+            await Driver.syncOpenGames()
+            print("syncOpenGames executed successfully")
+        except Exception as e:
+            print(f"Error during syncHistoryGames: {e}")
+            
+        # Calculate time elapsed and wait remaining time if any
+        elapsed = time.time() - start_time
+        wait_time = max(30 - elapsed, 0)
+        await asyncio.sleep(wait_time)
 
 @app.on_event("startup")
 async def startup_event():
     asyncio.create_task(syncHistoryGames())
+    asyncio.create_task(syncOpenGames())
 
 #VIews
 @app.get("/.well-known/walletconnect.txt")
@@ -72,8 +95,8 @@ async def getLeaderboard(request: Request):
 async def getUserOpenGames(request: Request):
     try:
         data = await request.json()  
-        pubkey = data['pubkey']
-        response = await Driver.getUserOpenGames(pubkey)
+        pubkey = data['pubkey'].replace("0x", "")
+        response = await Driver.getUserOpenGamesDB(pubkey)
         return JSONResponse(content=response)
     except Exception as e:
         return JSONResponse(content={"success": False, "message": str(e)})
@@ -81,23 +104,22 @@ async def getUserOpenGames(request: Request):
 async def getUserHistoryGames(request: Request):
     try:
         data = await request.json()  
-        pubkey = data['pubkey']
-        response = await Driver.getUserHistoryGames(pubkey)
+        pubkey = data['pubkey'].replace("0x", "")
+        response = await Driver.getUserHistoryGamesDB(pubkey)
         return JSONResponse(content=response)
     except Exception as e:
         return JSONResponse(content={"success": False, "message": str(e)})
 @app.post("/getHistoryGames")
 async def getHistoryGames(request: Request):
     try:
-        data = await request.json()  
-        response = await Driver.getHistoryGames()
+        response = await Driver.getHistoryGamesDB()
         return JSONResponse(content=response)
     except Exception as e:
         return JSONResponse(content={"success": False, "message": str(e)})
 @app.post("/getOpenGames")
 async def getOpenGames(request: Request):
     try:
-        response = await Driver.getOpenGames()
+        response = await Driver.getOpenGamesDB()
         return JSONResponse(content=response)
     except Exception as e:
         return JSONResponse(content={"success": False, "message": str(e)})
@@ -105,7 +127,7 @@ async def getOpenGames(request: Request):
 async def getWalletGameInfo(request: Request):
     try:
         data = await request.json()  
-        pubkey = data['pubkey']
+        pubkey = data['pubkey'].replace("0x", "")
         response = Driver.getWalletGameInfo(pubkey)
         return JSONResponse(content=response)
     except Exception as e:
@@ -126,7 +148,7 @@ async def cashOutCoin(request: Request):
         data = await request.json()  
         coinId = data['coinId']
         cashOutAddress = data['cashOutAddress']
-        pubkey = data['pubkey']
+        pubkey = data['pubkey'].replace("0x", "")
         signature = data['signature']
         fee = data['fee']
         response = await Driver.cashOutCoin(pubkey, coinId, cashOutAddress,signature, fee)
@@ -138,7 +160,7 @@ async def joinPlayer1(request: Request):
     try:
         data = await request.json()  
         coinId = data['coinId']
-        pubkey = data['pubkey']
+        pubkey = data['pubkey'].replace("0x", "")
         betAmount = data['betAmount']
         puzzleHashPlayer1 = data['puzzleHashPlayer1']
         compromisePlayer1 = data['compromisePlayer1']
@@ -179,7 +201,7 @@ async def concat(request: Request):
 async def getFeeEstimateCashOut(request: Request):
     try:
         data = await request.json()
-        pubkey = data['pubkey']
+        pubkey = data['pubkey'].replace("0x", "")
         coinId = data['coinId']
         response = await Driver.getFeeEstimateCashOut(pubkey, coinId)
         return JSONResponse(content=response)
@@ -189,7 +211,7 @@ async def getFeeEstimateCashOut(request: Request):
 async def getFeeEstimateJoinPlayer1(request: Request):
     try:
         data = await request.json()
-        pubkey = data['pubkey']
+        pubkey = data['pubkey'].replace("0x", "")
         coinId = data['coinId']
         response = await Driver.getFeeEstimateJoinPlayer1(pubkey, coinId)
         return JSONResponse(content=response)
@@ -199,7 +221,7 @@ async def getFeeEstimateJoinPlayer1(request: Request):
 async def getFeeEstimateJoinPlayer2(request: Request):
     try:
         data = await request.json()
-        pubkey = data['pubkey']
+        pubkey = data['pubkey'].replace("0x", "")
         coinId = data['coinId']
         coinIdWallet = data['coinIdWallet']
         response = await Driver.getFeeEstimateJoinPlayer2(pubkey, coinId,coinIdWallet)
@@ -210,14 +232,15 @@ async def getFeeEstimateJoinPlayer2(request: Request):
 async def joinPlayer2(request: Request):
     try:
         data = await request.json()
-        pubkey = data['pubkey']
+        pubkey = data['pubkey'].replace("0x", "")
         coinId = data['coinId']
-        coinIdWallet = data['coinIdWallet']
+        parentIdWallet = data['parentIdWallet']
         fee = data['fee']
         selection = data['selection']
         puzzleHashPlayer2 = data['puzzleHashPlayer2']
         signature = data['signature']
-        response = await Driver.joinPlayer2(pubkey, coinId, coinIdWallet, fee, selection, puzzleHashPlayer2, signature)
+        spendBundle = Driver.convertJsonToSpendBundle(data['spendBundle'])
+        response = await Driver.joinPlayer2(spendBundle,pubkey, coinId, parentIdWallet, fee, selection, puzzleHashPlayer2, signature)
         return JSONResponse(content=response)
     except Exception as e:
         return JSONResponse(content={"success": False, "message": str(e)})
@@ -235,7 +258,7 @@ async def getGameDetails(request: Request):
     try:
         data = await request.json()
         coinId = data['coinId']
-        response = await Driver.getGameDetails(coinId)
+        response = await Driver.getGameDetailsDB(coinId)
         return JSONResponse(content=response)
     except Exception as e:
         return JSONResponse(content={"success": False, "message": str(e)})
@@ -264,7 +287,7 @@ async def revealSelectionPlayer1(request: Request):
         selection = data['selection']
         signature = data['signature']
         fee = data['fee']
-        pubKey = data['pubkey']
+        pubKey = data['pubkey'].replace("0x", "")
         revealKey = data["revealKey"]
         coinIdWallet = data["coinIdWallet"]
         signatureWallet = data["signatureWallet"]
@@ -283,7 +306,7 @@ async def revealSelectionPlayer1WithFee(request: Request):
         selection = data['selection']
         signature = data['signature']
         fee = data['fee']
-        pubKey = data['pubkey']
+        pubKey = data['pubkey'].replace("0x", "")
         revealKey = data["revealKey"]
         coinIdWallet = data["coinIdWallet"]
         signatureWallet = data["signatureWallet"]
@@ -297,7 +320,7 @@ async def getFeeEstimateRevealSelectionPlayer1(request: Request):
         data = await request.json()
         data = await request.json()
         coinId = data['coinId']
-        pubKey = data['pubkey']
+        pubKey = data['pubkey'].replace("0x", "")
         coinIdWallet = data["coinIdWallet"]
         key = data["key"]
         selection = data["selection"]
@@ -348,7 +371,7 @@ async def verifySignatureLogin(request: Request):
     try:
         data = await request.json()
         signature = data['signature']
-        pubkey = data['pubkey']
+        pubkey = data['pubkey'].replace("0x", "")
         signingMode = data['signingMode']
         address = data['address']
         message = data['message']
@@ -356,6 +379,111 @@ async def verifySignatureLogin(request: Request):
         return JSONResponse(content=response)
     except Exception as e:
         return JSONResponse(content={"success": False, "message": str(e)})
+@app.post("/createSolutionCloseGame")
+async def createSolutionCloseGame(request: Request):
+    try:
+        data = await request.json()
+        coinAmount = data['coinAmount']
+        fee = data['fee']
+        response = await Driver.createSolutionCloseGame(coinAmount,fee)
+        return JSONResponse(content=response)
+    except Exception as e:
+        return JSONResponse(content={"success": False, "message": str(e)})
+@app.post("/createSolutionRevealGame")
+async def createSolutionRevealGame(request: Request):
+    try:
+        data = await request.json()
+        selection = data['selection']
+        revealKey = data['revealKey']
+        coinAmount = data['coinAmount']
+        response = await Driver.createSolutionRevealGame(selection,revealKey,coinAmount)
+        return JSONResponse(content=response)
+    except Exception as e:
+        return JSONResponse(content={"success": False, "message": str(e)})
+@app.post("/createSolutionClaimGame")
+async def createSolutionClaimGame(request: Request):
+    try:
+        data = await request.json()
+        coinAmount = data['coinAmount']
+        fee = data['fee']
+        response = await Driver.createSolutionClaimGame(coinAmount,fee)
+        return JSONResponse(content=response)
+    except Exception as e:
+        return JSONResponse(content={"success": False, "message": str(e)})
+@app.post("/createSolutionJoinPlayer1")
+async def createSolutionJoinPlayer1(request: Request):
+    try:
+        data = await request.json()
+        publicKeyPlayer1 = data['pubkey'].replace("0x", "")
+        amount = data['amount']
+        selectionHash = data['selectionHash']
+        cashOutAddressHash = data['cashOutAddressHash']
+        response = await Driver.createSolutionJoinPlayer1(publicKeyPlayer1,amount,selectionHash,cashOutAddressHash)
+        return JSONResponse(content=response)
+    except Exception as e:
+        return JSONResponse(content={"success": False, "message": str(e)})
+@app.post("/createSolutionJoinPlayer2")
+async def createSolutionJoinPlayer2(request: Request):
+    try:
+        data = await request.json()
+        publicKeyPlayer2 = data['pubkey'].replace("0x", "")
+        selection = data['selection']
+        cashOutAddressHash = data['cashOutAddressHash']
+        coinId = data['coinId']
+        response = await Driver.createSolutionJoinPlayer2(publicKeyPlayer2,coinId,selection,cashOutAddressHash)
+        return JSONResponse(content=response)
+    except Exception as e:
+        return JSONResponse(content={"success": False, "message": str(e)})
+@app.post("/setMyName")
+async def setMyName(request: Request):
+    try:
+        data = await request.json()
+        pubkey = data['pubkey'].replace("0x", "")
+        message = data['message']
+        signature = data['signature']
+        name = data['name']
+        response = await Driver.setMyName(pubkey, message, signature, name)
+        return JSONResponse(content=response)
+    except Exception as e:
+        return JSONResponse(content={"success": False, "message": str(e)})
+@app.post("/getUserName")
+async def getUserName(request: Request):
+    try:
+        data = await request.json()
+        pubkey = data['pubkey'].replace("0x", "")
+        response = await Driver.getUserName(pubkey)
+        return JSONResponse(content=response)
+    except Exception as e:
+        return JSONResponse(content={"success": False, "message": str(e)})
+@app.post("/registerFirebaseToken")
+async def registerFirebaseToken(request: Request):
+    try:
+        data = await request.json()
+        pubkey = data['pubkey'].replace("0x", "")
+        token = data['token']
+        response = await Driver.registerFirebaseToken(pubkey, token)
+        return JSONResponse(content=response)
+    except Exception as e:
+        return JSONResponse(content={"success": False, "message": str(e)})
+@app.post("/pushTx")
+async def pushTx(request: Request):
+    try:
+        data = await request.json()
+        spendBundleJson = data['tx']
+        spend_bundle = Driver.convertJsonToSpendBundle(spendBundleJson)
+        response = await Driver.pushTx(spend_bundle)
+        return JSONResponse(content=response)
+    except Exception as e:
+        return JSONResponse(content={"success": False, "message": str(e)})
+@app.get("/firebase-messaging-sw.js")
+async def get_firebase_messaging_sw():
+    file_path = "static/js/firebase-messaging-sw.js"
+    if os.path.exists(file_path):
+        with open(file_path, 'r') as file:
+            content = file.read()
+        return Response(content=content, media_type="application/javascript")
+    else:
+        raise HTTPException(status_code=404, detail="File not found")
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app)

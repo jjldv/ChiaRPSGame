@@ -27,7 +27,7 @@ function populateTable(tableId, data, columns) {
             const td = document.createElement("td");
             if (col === "player") {
                 const a = document.createElement("a");
-                a.href = `/userHistoryGames/${row[col]}`;
+                a.href = `/userHistoryGames/${row["publicKeyWinner"]}`;
                 a.textContent = row[col].substring(0, 50) + "...";
                 td.appendChild(a);
             } 
