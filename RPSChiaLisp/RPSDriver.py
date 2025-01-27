@@ -1646,8 +1646,15 @@ class RPSDriver:
     async def getNetworkInfo(self):
         try:
             full_node_client = await FNClient.getClient()
-            networkInfo = await full_node_client.fetch("get_network_info", {})
-            return networkInfo
+            network_info_result = {
+                "genesis_challenge": "ccd5bb71183532bff220ba46c268991a3ff07eb358e8255a65c30a2dce0e5fbb",
+                "network_name": "mainnet",
+                "network_prefix": "xch",
+                "success": True
+            }
+            return network_info_result
+            # networkInfo = await full_node_client.fetch("get_network_info", {})
+            # return networkInfo
         except Exception as e:
             return {"success": False, "message": str(e)}
         finally:
