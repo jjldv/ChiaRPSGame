@@ -18,6 +18,7 @@ class Session {
     }
     async initAsync() {
         try {
+            await new Promise(resolve => setTimeout(resolve, 2000));
             const isConnected = await this.IsGobyConnected();
             if (!isConnected) {
                 return;
