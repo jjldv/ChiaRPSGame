@@ -488,7 +488,7 @@ class RPSDriver:
             listOracleCoins = await self.getUnspentCoins(PublicOracleMod.get_tree_hash().hex(),startHeight)
             for oracleCoin in listOracleCoins:
                 parentCoin = await self.getCoinRecord(oracleCoin.coin.parent_coin_info.hex())
-                if parentCoin.confirmed_block_index < startHeight:
+                if oracleCoin.confirmed_block_index < startHeight:
                     continue
                 infoStageParent = await self.getGameStageInfo(parentCoin)
                 gameCoin = []
