@@ -20,7 +20,7 @@ Thank you for your support!
 
 ChiaRPSGame is a project designed to practice what has been studied about Chialisp and smart contracts. This project allows playing the classic Rock, Paper, Scissors game using smart contracts on the Chia blockchain.
 
-You can check out the demo at: [chiarps.mrdennis.dev](https://chiarps.mrdennis.dev) Offline
+You can check out the demo at: [chiarps.mrdennis.dev](https://chiarps.mrdennis.dev)
 
 
 ## Description
