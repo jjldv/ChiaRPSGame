@@ -48,6 +48,7 @@ class Session {
     }
     async IsGobyConnected() {
         try {
+            this.chiaWallet = window.chia;
             if (Boolean(this.chiaWallet && this.chiaWallet.isGoby) == false)
                 return false;
             await this.chiaWallet.request({
