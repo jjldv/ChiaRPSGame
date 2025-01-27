@@ -236,9 +236,14 @@
             </div>
         </div>
     </main>
-    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js";
+        import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-messaging.js";
+        window.firebaseModules = { initializeApp, getMessaging, getToken };
+    </script>
     <script src="/static/js/libs/qrcode.min.js"></script>
     <script src="/static/js/libs/greenweb.js"></script>
+    <script src="/static/js/Firebase.js"></script>
     <script src="/static/js/Goby.js"></script>
     <script src="/static/js/libs/mdb.umd.min.js"></script>
     <script src="https://unpkg.com/@walletconnect/sign-client@2.10.6/dist/index.umd.js"></script>

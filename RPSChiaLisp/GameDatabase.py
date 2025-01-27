@@ -40,6 +40,7 @@ class GameDatabase:
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY,
             publicKey TEXT UNIQUE,
+            firebaseToken TEXT,
             name TEXT
         )
         ''')
@@ -335,3 +336,13 @@ class GameDatabase:
         ''', (publicKey,))
         result = self.c.fetchone()
         return result[0] if result else publicKey
+    def setFirebaseToken(self, publicKey, token):
+        self.c.execute('''
+        UPDATE users SET firebaseToken = ? WHERE publicKey = ?
+        ''', (token, publicKey))
+        if self.c.rowcount == 0:
+            self.c.execute('''
+            INSERT INTO users (publicKey, firebaseToken) VALUES (?, ?)
+            ''', (publicKey, token))
+        self.conn.commit()
+        return self.c.rowcount > 0

@@ -455,6 +455,16 @@ async def getUserName(request: Request):
         return JSONResponse(content=response)
     except Exception as e:
         return JSONResponse(content={"success": False, "message": str(e)})
+@app.post("/registerFirebaseToken")
+async def registerFirebaseToken(request: Request):
+    try:
+        data = await request.json()
+        pubkey = data['pubkey'].replace("0x", "")
+        token = data['token']
+        response = await Driver.registerFirebaseToken(pubkey, token)
+        return JSONResponse(content=response)
+    except Exception as e:
+        return JSONResponse(content={"success": False, "message": str(e)})
 @app.post("/pushTx")
 async def pushTx(request: Request):
     try:
@@ -465,6 +475,15 @@ async def pushTx(request: Request):
         return JSONResponse(content=response)
     except Exception as e:
         return JSONResponse(content={"success": False, "message": str(e)})
+@app.get("/firebase-messaging-sw.js")
+async def get_firebase_messaging_sw():
+    file_path = "static/js/firebase-messaging-sw.js"
+    if os.path.exists(file_path):
+        with open(file_path, 'r') as file:
+            content = file.read()
+        return Response(content=content, media_type="application/javascript")
+    else:
+        raise HTTPException(status_code=404, detail="File not found")
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app)

@@ -1724,3 +1724,9 @@ class RPSDriver:
             return {"success": True, "name": name}
         except Exception as e:
             return {"success": False, "message": str(e)}
+    async def registerFirebaseToken(self, pubkey: str, token: str):
+        try:
+            self.GameDatabase.setFirebaseToken(pubkey, token)
+            return {"success": True, "message": "Token registered"}
+        except Exception as e:
+            return {"success": False, "message": str(e)}

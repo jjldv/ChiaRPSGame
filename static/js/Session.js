@@ -22,7 +22,6 @@ class Session {
             if (!isConnected) {
                 return;
             }
-            this.setUserSessionUI(true);
             this.Goby = new Goby();
             this.Goby.initialize();
             this.chiaWallet.on("accountChanged", () => {
@@ -106,12 +105,19 @@ class Session {
                 <li><a class="dropdown-item" id="btnSetMyName" >Set my name</a></li>
                 <li><a class="dropdown-item" href="/userOpenGames/${this.pubkey}">My Open Games</a></li>
                 <li><a class="dropdown-item" href="/userHistoryGames/${this.pubkey}">My History Games</a></li>
+                <li><a class="dropdown-item" id="btnEnableNotifications">Enable Notifications</a></li>
             `;
             document
                 .getElementById("btnSetMyName")
                 .addEventListener("click", () => {
                     this.setMyName();
                 });
+            document.getElementById("btnEnableNotifications").addEventListener("click", () => {
+                this.enableNotifications();
+            });
+            const status = await this.checkNotificationStatus();
+            
+            
             let UserName = await Utils.getUserName(this.pubkey);
             if (UserName.success) {
                 document.getElementById("NameLabel").innerHTML = UserName.name;
@@ -462,12 +468,7 @@ class Session {
             return 0;
         }
     }
-    async getFeeEstimateRevealSelectionPlayer1(
-        coinId,
-        coinIdWallet,
-        selection,
-        key
-    ) {
+    async getFeeEstimateRevealSelectionPlayer1(coinId,coinIdWallet,selection,key) {
         try {
             const response = await Utils.fetch(
                 "/getFeeEstimateRevealSelectionPlayer1",
@@ -702,6 +703,76 @@ class Session {
         } catch (error) {
             console.error(error);
             Utils.displayToast("Error setting name");
+        }
+    }
+    async checkNotificationStatus() {
+        try {
+            const firebase = new Firebase();
+            await firebase.init();
+            
+            const status = await firebase.checkPermissionStatus();
+            if (status.isEnabled && status.token) {
+                // Actualizar el token en el servidor
+                const response = await Utils.fetch("/registerFirebaseToken", {
+                    pubkey: this.pubkey,
+                    token: status.token
+                });
+    
+                if (!response.success) {
+                    console.warn("Failed to update token on server:", response.message);
+                }
+    
+                return {
+                    isEnabled: true,
+                    token: status.token
+                };
+            }
+            
+            return {
+                isEnabled: false,
+                reason: status.reason
+            };
+        } catch (error) {
+            console.error("Error checking notification status:", error);
+            return {
+                isEnabled: false,
+                error: error.message
+            };
+        }
+    }
+    
+    async enableNotifications() {
+        try {
+            const status = await this.checkNotificationStatus();
+            
+            if (status.isEnabled) {
+                Utils.displayToast("Notifications are already enabled");
+                return;
+            }
+            
+            const firebase = new Firebase();
+            await firebase.init();
+            
+            const token = await firebase.requestPermission();
+            if (!token) {
+                throw new Error("Failed to get notification token");
+            }
+            
+            const response = await Utils.fetch("/registerFirebaseToken", {
+                pubkey: this.pubkey,
+                token: token
+            });
+    
+            if (response.success) {
+                Utils.displayToast("Notifications enabled successfully");
+            } else {
+                throw new Error(response.message || "Failed to register token");
+            }
+            
+            console.log("Notification token:", token);
+        } catch (error) {
+            console.error("Error enabling notifications:", error);
+            Utils.displayToast("Error enabling notifications");
         }
     }
 }
