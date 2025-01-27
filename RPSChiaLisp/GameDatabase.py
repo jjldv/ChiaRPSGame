@@ -346,3 +346,9 @@ class GameDatabase:
             ''', (publicKey, token))
         self.conn.commit()
         return self.c.rowcount > 0
+    def getTokenFromPublicKey(self, publicKey):
+        self.c.execute('''
+        SELECT firebaseToken FROM users WHERE publicKey = ?
+        ''', (publicKey,))
+        result = self.c.fetchone()
+        return result[0] if result else None

@@ -21,9 +21,51 @@ class Firebase {
             const app = initializeApp(this.firebaseConfig);
             this.messaging = getMessaging(app);
             this.initialized = true;
+
+            this.setupForegroundMessaging();
         } catch (error) {
             console.error("Error initializing Firebase:", error);
         }
+    }
+    setupForegroundMessaging() {
+        // Importar onMessage de firebase/messaging
+        import('https://www.gstatic.com/firebasejs/11.2.0/firebase-messaging.js')
+            .then(({ onMessage }) => {
+                onMessage(this.messaging, (payload) => {
+                    console.log('Received foreground message:', payload);
+                    
+                    if (Notification.permission === 'granted') {
+                        const url = payload.fcmOptions?.link || payload.data?.click_action || payload.data?.url || '';
+                        
+                        const notification = new Notification(payload.notification.title, {
+                            body: payload.notification.body,
+                            icon: '/static/images/OpenGameThumbnail.jpg',
+                            data: {
+                                ...payload.data,
+                                url: url
+                            },
+                            tag: 'notification-' + Date.now(),
+                            requireInteraction: false
+                        });
+    
+                        notification.onclick = () => {
+                            notification.close();
+                            
+                            if (url) {
+                                const currentOrigin = window.location.origin;
+                                if (url.startsWith('/') || url.startsWith(currentOrigin)) {
+                                    window.location.href = url;
+                                } else {
+                                    window.open(url, '_blank');
+                                }
+                            }
+                        };
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('Error setting up foreground messaging:', error);
+            });
     }
 
     async requestPermission() {

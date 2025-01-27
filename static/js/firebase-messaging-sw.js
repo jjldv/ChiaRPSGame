@@ -15,12 +15,39 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
-    const { title, body } = payload.notification;
+    console.log('Received background message:', payload);
+    
+    const notificationTitle = payload.notification.title;
     const notificationOptions = {
-        body,
-        icon: '/static/images/OpenGameThumbnail.jpg', 
-        data: payload.data
+        body: payload.notification.body,
+        icon: '/static/images/OpenGameThumbnail.jpg',
+        data: {
+            ...payload.data,
+            url: payload.fcmOptions?.link || payload.data?.click_action || ''
+        },
+        tag: 'notification-' + Date.now(), 
+        requireInteraction: false 
     };
 
-    self.registration.showNotification(title, notificationOptions);
+    self.registration.showNotification(notificationTitle, notificationOptions);
+});
+
+self.addEventListener('notificationclick', function(event) {
+    console.log('Notification click:', event);
+    
+    event.notification.close();
+    
+    const url = event.notification.data?.url || '/';
+    
+    event.waitUntil(
+        clients.matchAll({type: 'window'}).then(windowClients => {
+            // Revisar si ya hay una ventana abierta y usarla
+            for (let client of windowClients) {
+                if (client.url.includes(self.registration.scope) && 'focus' in client) {
+                    return client.navigate(url).then(client => client.focus());
+                }
+            }
+            return clients.openWindow(url);
+        })
+    );
 });

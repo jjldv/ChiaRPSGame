@@ -24,10 +24,12 @@ from RPSChiaLisp.WalletClient import WalletClient
 from RPSChiaLisp.FNClient import FNClient
 from RPSChiaLisp.GameDatabase import GameDatabase
 import datetime
-import datetime
+from RPSChiaLisp.Firebase import Firebase
+
 
 class RPSDriver:
     def __init__(self, hexPrivateKey:str):
+        self.Firebase =  Firebase("serviceAccountKey.json")
         self.GameDatabase = GameDatabase()
         self.CASH_OUT_ACTION = 0
         self.ACTION_JOIN_PLAYER1 = 1
@@ -495,6 +497,8 @@ class RPSDriver:
                     continue
                 coin = parentCoin if len(gameCoin) <= 2 else [c for c in gameCoin if c.coin.amount != 0][0]
                 info = infoStageParent if len(gameCoin) == 0 else await self.getGameStageInfo(coin)
+                await self.sendNotificationtoPubkey(info["gameParams"]["publicKeyPlayer1"],"Game update",info["stageName"],"https://chiarps.mrdennis.dev/gameDetails/"+coin.coin.name().hex())
+                await self.sendNotificationtoPubkey(info["gameParams"]["publicKeyPlayer2"],"Game update",info["stageName"],"https://chiarps.mrdennis.dev/gameDetails/"+coin.coin.name().hex())
                 publicKeyP1 = G1Element.from_bytes(bytes.fromhex(info["gameParams"]["publicKeyPlayer1"]))
                 player1WalletMod = self.GAME_WALLET_MOD.curry(publicKeyP1)
                 gameParentCoins = await self.getGameParentCoins(coin,player1WalletMod)
@@ -603,6 +607,8 @@ class RPSDriver:
             for oracleCoin in listOracleCoins:
                 parentCoin = await self.getCoinRecord(oracleCoin.coin.parent_coin_info.hex())
                 infoStage = await self.getGameStageInfo(parentCoin)
+                await self.sendNotificationtoPubkey(infoStage["gameParams"]["publicKeyPlayer1"],"Your game has ended", "Game result: " + infoStage["gameResult"],"https://chiarps.mrdennis.dev/gameDetails/"+parentCoin.coin.name().hex())
+                await self.sendNotificationtoPubkey(infoStage["gameParams"]["publicKeyPlayer2"],"Your game has ended", "Game result: " + infoStage["gameResult"],"https://chiarps.mrdennis.dev/gameDetails/"+parentCoin.coin.name().hex())
                 publicKeyP1 = G1Element.from_bytes(bytes.fromhex(infoStage["gameParams"]["publicKeyPlayer1"]))
                 player1WalletMod = self.GAME_WALLET_MOD.curry(publicKeyP1)
                 gameParentCoins = await self.getGameParentCoins(parentCoin,player1WalletMod)
@@ -1730,3 +1736,14 @@ class RPSDriver:
             return {"success": True, "message": "Token registered"}
         except Exception as e:
             return {"success": False, "message": str(e)}
+    async def sendNotificationtoPubkey(self, pubkey: str, title: str, body: str , action_url: str):
+        token = self.GameDatabase.getTokenFromPublicKey(pubkey)
+        if token is None or token == "":
+            return {"success": False, "message": "Token not found"}
+        await self.Firebase.send_notification(
+                token=token,
+                title=title,
+                message=body,
+                action_url=action_url,
+                additional_data=None
+            )
