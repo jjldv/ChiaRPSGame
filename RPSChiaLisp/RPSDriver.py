@@ -609,7 +609,7 @@ class RPSDriver:
             for oracleCoin in listOracleCoins:
                 parentCoin = await self.getCoinRecord(oracleCoin.coin.parent_coin_info.hex())
                 infoStage = await self.getGameStageInfo(parentCoin)
-                if parentCoin.confirmed_block_index < startHeight:
+                if oracleCoin.confirmed_block_index < startHeight:
                     continue
                 await self.sendNotificationtoPubkey(infoStage["gameParams"]["publicKeyPlayer1"],"Your game has ended", "Game result: " + infoStage["gameResult"],"https://chiarps.mrdennis.dev/gameDetails/"+parentCoin.coin.name().hex())
                 await self.sendNotificationtoPubkey(infoStage["gameParams"]["publicKeyPlayer2"],"Your game has ended", "Game result: " + infoStage["gameResult"],"https://chiarps.mrdennis.dev/gameDetails/"+parentCoin.coin.name().hex())
