@@ -158,9 +158,6 @@ async function getGameDetails(showSpinner = false){
     }
 }
 
-
-
-
 async function closeGame(){
     
     try {
