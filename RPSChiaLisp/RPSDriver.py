@@ -488,6 +488,8 @@ class RPSDriver:
             listOracleCoins = await self.getUnspentCoins(PublicOracleMod.get_tree_hash().hex(),startHeight)
             for oracleCoin in listOracleCoins:
                 parentCoin = await self.getCoinRecord(oracleCoin.coin.parent_coin_info.hex())
+                if parentCoin.confirmed_block_index < startHeight:
+                    continue
                 infoStageParent = await self.getGameStageInfo(parentCoin)
                 gameCoin = []
                 if oracleCoin.spent_block_index == 0:
@@ -607,6 +609,8 @@ class RPSDriver:
             for oracleCoin in listOracleCoins:
                 parentCoin = await self.getCoinRecord(oracleCoin.coin.parent_coin_info.hex())
                 infoStage = await self.getGameStageInfo(parentCoin)
+                if parentCoin.confirmed_block_index < startHeight:
+                    continue
                 await self.sendNotificationtoPubkey(infoStage["gameParams"]["publicKeyPlayer1"],"Your game has ended", "Game result: " + infoStage["gameResult"],"https://chiarps.mrdennis.dev/gameDetails/"+parentCoin.coin.name().hex())
                 await self.sendNotificationtoPubkey(infoStage["gameParams"]["publicKeyPlayer2"],"Your game has ended", "Game result: " + infoStage["gameResult"],"https://chiarps.mrdennis.dev/gameDetails/"+parentCoin.coin.name().hex())
                 publicKeyP1 = G1Element.from_bytes(bytes.fromhex(infoStage["gameParams"]["publicKeyPlayer1"]))
