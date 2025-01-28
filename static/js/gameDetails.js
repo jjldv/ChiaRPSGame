@@ -245,7 +245,8 @@ async function joinPlayer2(){
         );
         gobyCoinSpends.sort((a, b) => a.coin.amount - b.coin.amount);
 
-        const highestCoinSpend = gobyCoinSpends[gobyCoinSpends.length - 1];
+        const highestCoinSpend = gobyCoinSpends.find(spend => spend.solution.includes(gameWalletPuzzleHash));
+        console.log("Goby wallet parent coin:", highestCoinSpend);
 
         const gobySmartCoin = new greenweb.SmartCoin({
             parentCoinInfo: highestCoinSpend.coin.parent_coin_info,

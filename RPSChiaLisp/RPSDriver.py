@@ -444,7 +444,7 @@ class RPSDriver:
             spend_bundle = SpendBundle(fullSpendBundle, aggregated_signature)
             status = await self.pushTx(spend_bundle)
             if status["success"] == False:
-                return {"success": False, "message": self.parseError(status["message"])}
+                return {"success": False, "message": self.parseError(status["error"])}
             return {"success": True, "message": "Instruction added to mempool", "status": status}
         except Exception as e:
             if hasattr(e, 'args') and len(e.args) >= 2 and isinstance(e.args[1], str) and all(c in string.hexdigits for c in e.args[1]):
@@ -463,7 +463,7 @@ class RPSDriver:
             spend_bundle = SpendBundle(spend, aggregated_signature)
             status = await self.pushTx(spend_bundle)
             if status["success"] == False:
-                return {"success": False, "message": self.parseError(status["message"])}
+                return {"success": False, "message": self.parseError(status["error"])}
             return {"success": True, "message": "Instruction added to mempool", "status": status}
         except Exception as e:
             if hasattr(e, 'args') and len(e.args) >= 2 and isinstance(e.args[1], str) and all(c in string.hexdigits for c in e.args[1]):
@@ -865,7 +865,7 @@ class RPSDriver:
             spend_bundle = SpendBundle([spend], aggregated_signature)
             status = await self.pushTx(spend_bundle)
             if status["success"] == False:
-                return {"success": False, "message": self.parseError(status["message"])}
+                return {"success": False, "message": self.parseError(status["error"])}
             return {"success": True, "message": "Spend bundle added to mempool, wait for the confirmation", "status": status}
         except Exception as e:
             if hasattr(e, 'args') and len(e.args) >= 2 and isinstance(e.args[1], str) and all(c in string.hexdigits for c in e.args[1]):
@@ -1596,7 +1596,7 @@ class RPSDriver:
             spend_bundle = SpendBundle(spend, aggregated_signature)
             status = await self.pushTx(spend_bundle)
             if status["success"] == False:
-                return {"success": False, "message": self.parseError(status["message"])}
+                return {"success": False, "message": self.parseError(status["error"])}
             return {"success": True, "message": "Spend bundle added to mempool, wait for the confirmation", "status": status}
         except Exception as e:
             if hasattr(e, 'args') and len(e.args) >= 2 and isinstance(e.args[1], str) and all(c in string.hexdigits for c in e.args[1]):
@@ -1637,7 +1637,7 @@ class RPSDriver:
             spend_bundle = SpendBundle(spend, aggregated_signature)
             status = await self.pushTx(spend_bundle)
             if status["success"] == False:
-                return {"success": False, "message": self.parseError(status["message"])}
+                return {"success": False, "message": self.parseError(status["error"])}
             return {"success": True, "message": "Spend bundle added to mempool, wait for the confirmation", "status": status}
         except Exception as e:
             try:

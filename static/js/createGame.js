@@ -270,7 +270,8 @@ async function joinPlayer1FromGoby(toGameWalletAddress,betAmount,fee,selectionHa
         );
        
 
-        const highestCoinSpend = gobyCoinSpends[gobyCoinSpends.length - 1];
+        const highestCoinSpend = gobyCoinSpends.find(spend => spend.solution.includes(gameWalletPuzzleHash));
+        console.log("Goby wallet parent coin:", highestCoinSpend);
 
         const gobySmartCoin = new greenweb.SmartCoin({
             parentCoinInfo: highestCoinSpend.coin.parent_coin_info,
