@@ -744,14 +744,11 @@ class RPSDriver:
             return {"success": False, "message": str(e)}
     async def pushTx(self, spend_bundle: SpendBundle):
         try:
-            full_node_client = await FNClient.getClient()
-            status = await full_node_client.push_tx(spend_bundle)
+            spend_bundleJson = spend_bundle.to_json_dict()
+            status = await self.fetch("/push_tx", {"spend_bundle": spend_bundleJson})
             return status
         except Exception as e:
             return {"success": False, "message": str(e)}
-        finally:
-            full_node_client.close()
-            await full_node_client.await_closed()
     async def getCoin(self, coin_id: str):
         try:
             full_node_client = await FNClient.getClient()
@@ -1436,7 +1433,7 @@ class RPSDriver:
             spend_bundle = SpendBundle(spend, aggregated_signature)
             status = await self.pushTx(spend_bundle)
             if status["success"] == False:
-                return {"success": False, "message": self.parseError(status["message"])}
+                return {"success": False, "message": self.parseError(status["error"])}
             return {"success": True, "message": "Instruction added to mempool", "status": status}
         except Exception as e:
             try:
@@ -1470,7 +1467,7 @@ class RPSDriver:
             spend_bundle = SpendBundle(spend, aggregated_signature)
             status = await self.pushTx(spend_bundle)
             if status["success"] == False:
-                return {"success": False, "message": self.parseError(status["message"])}
+                return {"success": False, "message": self.parseError(status["error"])}
             return {"success": True, "message": "Instruction added to mempool", "status": status}
         except Exception as e:
             try:
