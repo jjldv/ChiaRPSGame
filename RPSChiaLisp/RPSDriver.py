@@ -911,22 +911,27 @@ class RPSDriver:
             return format(xch, '.12f')  
         except Exception as e:
             return None
-    async def getCoinPendingTransaction(self,coinId:str):
+    async def getCoinPendingTransaction(self, coinId: str):
         try:
             full_node_client = await FNClient.getClient()
-            coin = await full_node_client.get_mempool_items_by_coin_name(bytes32.fromhex(coinId))
-            if coin and coin['mempool_items']:
-                spend_bundle = coin['mempool_items'][0]['spend_bundle']
-                coin_spends = None
-                for coin_spend in spend_bundle['coin_spends']:
+            mempool_items = await full_node_client.get_all_mempool_items()
+            coin_spends = None
+            spend_bundle = None
+
+            for item in mempool_items.values():
+                for coin_spend in item['spend_bundle']['coin_spends']:
                     if await self.calculateCoinId(coin_spend['coin']['parent_coin_info'], coin_spend['coin']['puzzle_hash'], coin_spend['coin']['amount']) == coinId:
                         coin_spends = coin_spend
+                        spend_bundle = item['spend_bundle']
                         break
-                
+                if coin_spends:
+                    break
+
+            if coin_spends:
                 curriedParams = await self.getPuzzleRevealCurriedParams(Program.fromhex(coin_spends['puzzle_reveal']).uncurry()[1])
                 solutionParams = await self.getSolutionParams(Program.fromhex(coin_spends['solution']))
                 action = "--"
-                if len(curriedParams["curriedParams"]) == 1:#means is Wallet Game
+                if len(curriedParams["curriedParams"]) == 1:  # means is Wallet Game
                     if solutionParams["params"][0] == "":
                         action = "Cashing Out Coin From Game Wallet"
                     elif solutionParams["params"][0] == "01":
@@ -949,9 +954,9 @@ class RPSDriver:
                     "success": True,
                     "message": "Pending transaction found",
                     "action": action,
-                    "pendingTransaction": coin['mempool_items'],
+                    "pendingTransaction": [item],
                     "spendBundle": spend_bundle,
-                    "coin":coin_spends["coin"],
+                    "coin": coin_spends["coin"],
                 }
             else:
                 return {"success": True, "message": "No pending transaction found", "pendingTransaction": []}
