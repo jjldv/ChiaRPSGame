@@ -25,10 +25,12 @@ from RPSChiaLisp.FNClient import FNClient
 from RPSChiaLisp.GameDatabase import GameDatabase
 import datetime
 from RPSChiaLisp.Firebase import Firebase
+import requests
 
 
 class RPSDriver:
     def __init__(self, hexPrivateKey:str):
+        self.urlApi = "https://api.coinset.org"
         self.Firebase =  Firebase("serviceAccountKey.json")
         self.GameDatabase = GameDatabase()
         self.CASH_OUT_ACTION = 0
@@ -1645,21 +1647,11 @@ class RPSDriver:
                 return {"success": False, "message": str(e)}
     async def getNetworkInfo(self):
         try:
-            full_node_client = await FNClient.getClient()
-            network_info_result = {
-                "genesis_challenge": "ccd5bb71183532bff220ba46c268991a3ff07eb358e8255a65c30a2dce0e5fbb",
-                "network_name": "mainnet",
-                "network_prefix": "xch",
-                "success": True
-            }
-            return network_info_result
-            # networkInfo = await full_node_client.fetch("get_network_info", {})
-            # return networkInfo
+           
+            networkInfo = await self.fetch("get_network_info", {})
+            return networkInfo
         except Exception as e:
             return {"success": False, "message": str(e)}
-        finally:
-            full_node_client.close()
-            await full_node_client.await_closed()
     async def verifySignatureLogin(self, publicKey:str,messageLogin:str, signature:str,signingMode:str,address:str):
         try:
             walletClient = await WalletClient.getClient()
@@ -1758,3 +1750,10 @@ class RPSDriver:
                 action_url=action_url,
                 additional_data=None
             )
+    async def fetch(self, endpoint: str, data: dict):
+        try:
+            url = f"{self.urlApi}/{endpoint}"
+            response = requests.post(url, json=data)
+            return response.json()
+        except Exception as e:
+            return {"success": False, "message": str(e)}
