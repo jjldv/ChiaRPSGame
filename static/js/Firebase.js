@@ -28,50 +28,50 @@ class Firebase {
         }
     }
     // En el código de foreground
-// setupForegroundMessaging() {
-//     import('https://www.gstatic.com/firebasejs/11.2.0/firebase-messaging.js')
-//         .then(({ onMessage }) => {
-//             onMessage(this.messaging, (payload) => {
-//                 if (document.visibilityState === 'visible') {
-//                     console.log('Received foreground message:', payload);
+setupForegroundMessaging() {
+    import('https://www.gstatic.com/firebasejs/11.2.0/firebase-messaging.js')
+        .then(({ onMessage }) => {
+            onMessage(this.messaging, (payload) => {
+                if (document.visibilityState === 'visible') {
+                    console.log('Received foreground message:', payload);
                     
-//                     if (Notification.permission === 'granted') {
-//                         const url = payload.fcmOptions?.link || payload.data?.click_action || payload.data?.url || '';
+                    if (Notification.permission === 'granted') {
+                        const url = payload.fcmOptions?.link || payload.data?.click_action || payload.data?.url || '';
                         
-//                         const notification = new Notification(payload.notification.title, {
-//                             body: payload.notification.body,
-//                             icon: '/static/images/OpenGameThumbnail.jpg',
-//                             data: {
-//                                 ...payload.data,
-//                                 url: url
-//                             },
-//                             tag: 'notification-' + Date.now(),
-//                             requireInteraction: false
-//                         });
+                        const notification = new Notification(payload.notification.title, {
+                            body: payload.notification.body,
+                            icon: '/static/images/OpenGameThumbnail.jpg',
+                            data: {
+                                ...payload.data,
+                                url: url
+                            },
+                            tag: 'notification-' + Date.now(),
+                            requireInteraction: false
+                        });
 
-//                         notification.onclick = () => {
-//                             notification.close();
+                        notification.onclick = () => {
+                            notification.close();
                             
-//                             if (url) {
-//                                 try {
-//                                     const newWindow = window.open(url, '_blank');
-//                                     if (newWindow === null) {
-//                                         window.location.href = url;
-//                                     }
-//                                 } catch (error) {
-//                                     console.error('Error opening URL:', error);
-//                                     window.location.href = url;
-//                                 }
-//                             }
-//                         };
-//                     }
-//                 }
-//             });
-//         })
-//         .catch(error => {
-//             console.error('Error setting up foreground messaging:', error);
-//         });
-// }
+                            if (url) {
+                                try {
+                                    const newWindow = window.open(url, '_blank');
+                                    if (newWindow === null) {
+                                        window.location.href = url;
+                                    }
+                                } catch (error) {
+                                    console.error('Error opening URL:', error);
+                                    window.location.href = url;
+                                }
+                            }
+                        };
+                    }
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error setting up foreground messaging:', error);
+        });
+}
 
     async requestPermission() {
         try {
