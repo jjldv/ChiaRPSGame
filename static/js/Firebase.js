@@ -27,11 +27,12 @@ class Firebase {
             console.error("Error initializing Firebase:", error);
         }
     }
-    setupForegroundMessaging() {
-        // Importar onMessage de firebase/messaging
-        import('https://www.gstatic.com/firebasejs/11.2.0/firebase-messaging.js')
-            .then(({ onMessage }) => {
-                onMessage(this.messaging, (payload) => {
+    // En el código de foreground
+setupForegroundMessaging() {
+    import('https://www.gstatic.com/firebasejs/11.2.0/firebase-messaging.js')
+        .then(({ onMessage }) => {
+            onMessage(this.messaging, (payload) => {
+                if (document.visibilityState === 'visible') {
                     console.log('Received foreground message:', payload);
                     
                     if (Notification.permission === 'granted') {
@@ -47,7 +48,7 @@ class Firebase {
                             tag: 'notification-' + Date.now(),
                             requireInteraction: false
                         });
-    
+
                         notification.onclick = () => {
                             notification.close();
                             
@@ -64,12 +65,13 @@ class Firebase {
                             }
                         };
                     }
-                });
-            })
-            .catch(error => {
-                console.error('Error setting up foreground messaging:', error);
+                }
             });
-    }
+        })
+        .catch(error => {
+            console.error('Error setting up foreground messaging:', error);
+        });
+}
 
     async requestPermission() {
         try {
