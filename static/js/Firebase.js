@@ -52,11 +52,14 @@ class Firebase {
                             notification.close();
                             
                             if (url) {
-                                const currentOrigin = window.location.origin;
-                                if (url.startsWith('/') || url.startsWith(currentOrigin)) {
+                                try {
+                                    const newWindow = window.open(url, '_blank');
+                                    if (newWindow === null) {
+                                        window.location.href = url;
+                                    }
+                                } catch (error) {
+                                    console.error('Error opening URL:', error);
                                     window.location.href = url;
-                                } else {
-                                    window.open(url, '_blank');
                                 }
                             }
                         };

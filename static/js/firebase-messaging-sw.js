@@ -33,21 +33,29 @@ messaging.onBackgroundMessage((payload) => {
 });
 
 self.addEventListener('notificationclick', function(event) {
-    console.log('Notification click:', event);
-    
     event.notification.close();
     
     const url = event.notification.data?.url || '/';
     
     event.waitUntil(
-        clients.matchAll({type: 'window'}).then(windowClients => {
-            // Revisar si ya hay una ventana abierta y usarla
-            for (let client of windowClients) {
-                if (client.url.includes(self.registration.scope) && 'focus' in client) {
-                    return client.navigate(url).then(client => client.focus());
+        clients.matchAll({type: 'window', includeUncontrolled: true})
+            .then(windowClients => {
+                // Intentar encontrar una ventana existente
+                const matchingClient = windowClients.find(client => 
+                    client.url.includes(self.registration.scope));
+                
+                if (matchingClient) {
+                    return matchingClient.navigate(url)
+                        .then(client => client.focus())
+                        .catch(() => clients.openWindow(url));
                 }
-            }
-            return clients.openWindow(url);
-        })
+                
+                return clients.openWindow(url)
+                    .catch(error => {
+                        console.error('Error opening window:', error);
+                        // Intentar abrir en una nueva pestaña como fallback
+                        return clients.openWindow(url);
+                    });
+            })
     );
 });
