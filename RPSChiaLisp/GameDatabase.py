@@ -312,7 +312,7 @@ class GameDatabase:
                 g.emojiSelectionPlayer1 as player1_emoji,
                 g.emojiSelectionPlayer2 as player2_emoji,
                 g.publicKeyWinner,
-                g.gameAmount * CASE WHEN g.publicKeyPlayer2 IS NULL OR g.publicKeyPlayer2 = '' THEN 1 ELSE 0.5 END as bet_amount,
+                g.gameAmount  as bet_amount,
                 CASE WHEN g.coinStatus = 'UNSPENT' THEN 'OPEN' ELSE g.gameStatus END as game_status,
                 g.gameStatusDescription
             FROM game_data g
@@ -387,7 +387,7 @@ class GameDatabase:
                 CASE WHEN g.publicKeyPlayer1 = ? THEN g.publicKeyPlayer2 ELSE g.publicKeyPlayer1 END as opponent_key,
                 COALESCE(u.name, CASE WHEN g.publicKeyPlayer1 = ? THEN g.publicKeyPlayer2 ELSE g.publicKeyPlayer1 END) as opponent_name,
                 g.publicKeyWinner,
-                g.gameAmount * CASE WHEN g.publicKeyPlayer2 IS NULL OR g.publicKeyPlayer2 = '' THEN 1 ELSE 0.5 END as bet_amount,
+                g.gameAmount  as bet_amount,
                 CASE WHEN g.coinStatus = 'UNSPENT' THEN 'OPEN' ELSE g.gameStatus END as game_status,
                 g.gameStatusDescription
             FROM game_data g
@@ -635,7 +635,7 @@ class GameDatabase:
                 CASE WHEN g.publicKeyPlayer1 = ? THEN g.publicKeyPlayer2 ELSE g.publicKeyPlayer1 END as opponent_key,
                 COALESCE(u.name, CASE WHEN g.publicKeyPlayer1 = ? THEN g.publicKeyPlayer2 ELSE g.publicKeyPlayer1 END) as opponent_name,
                 g.publicKeyWinner,
-                g.gameAmount * CASE WHEN g.publicKeyPlayer2 IS NULL OR g.publicKeyPlayer2 = '' THEN 1 ELSE 0.5 END as bet_amount,
+                g.gameAmount  as bet_amount,
                 CASE WHEN g.coinStatus = 'UNSPENT' THEN 'OPEN' ELSE g.gameStatus END as game_status,
                 g.gameStatusDescription
             FROM game_data g
