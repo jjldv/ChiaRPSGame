@@ -36,7 +36,7 @@ async function getUserOpenGames() {
             row.innerHTML = `
                 <td class="text-center">${game.date}</td>
                 <td class="text-center">${game.moveEmoji || '❓'}</td>
-                <td class="text-center">${game.opponentKey === '----' ? '' : `<a href="/userProfile/${game.opponentKey}">${game.opponent == game.opponentKey ? "Anonymous" : game.opponent}</a>`}</td>
+                <td class="text-center">${game.opponentKey === '----' ? '----' : `<a href="/userProfile/${game.opponentKey}">${game.opponent == game.opponentKey ? "Anonymous" : game.opponent}</a>`}</td>
                 <td class="text-center">
                     <span class="badge ${resultClass}">
                         ${game.status === 'OPEN' ? 'OPEN' : game.result}
