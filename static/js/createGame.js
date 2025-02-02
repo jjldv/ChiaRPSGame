@@ -340,7 +340,9 @@ async function joinPlayer1FromGoby(toGameWalletAddress,betAmount,fee,selectionHa
         selectionRPSHash.value = "";
         feeSpendbundle.value = "0";
         document.getElementById("betAmount").value = "";
-        setPendingTransaction(gameCoinId);
+        setTimeout(() => {
+            setPendingTransaction(gameCoinId);
+        }, 3000);
         return true;
     } catch (error) {
         Utils.hideSpinner();
