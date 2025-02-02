@@ -253,7 +253,7 @@ class GameDatabase:
                 g.emojiSelectionPlayer1 as player1_emoji,
                 g.emojiSelectionPlayer2 as player2_emoji,
                 g.publicKeyWinner,
-                g.gameAmount * CASE WHEN g.publicKeyPlayer2 IS NULL OR g.publicKeyPlayer2 = '' THEN 1 ELSE 0.5 END as bet_amount,
+                g.gameAmount  as bet_amount,
                 CASE WHEN g.coinStatus = 'UNSPENT' THEN 'OPEN' ELSE g.gameStatus END as game_status,
                 g.gameStatusDescription
             FROM game_data g
