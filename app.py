@@ -77,6 +77,9 @@ async def historyGames(request: Request):
 @app.get("/gameDetails/{gameId}")
 async def gameDetails(request: Request):
     return templates.TemplateResponse('gameDetails.html', {"request": request})
+@app.get("/userProfile/{pubkey}")
+async def userProfile(request: Request):
+    return templates.TemplateResponse('userProfile.html', {"request": request})
 @app.get("/openGames")
 async def openGames(request: Request):
     return templates.TemplateResponse('openGames.html', {"request": request})
@@ -106,6 +109,13 @@ async def getUserHistoryGames(request: Request):
         data = await request.json()  
         pubkey = data['pubkey'].replace("0x", "")
         response = await Driver.getUserHistoryGamesDB(pubkey)
+        return JSONResponse(content=response)
+    except Exception as e:
+        return JSONResponse(content={"success": False, "message": str(e)})
+@app.post("/getGlobalStats")
+async def getGlobalStats(request: Request):
+    try:
+        response = await Driver.getGlobalStats()
         return JSONResponse(content=response)
     except Exception as e:
         return JSONResponse(content={"success": False, "message": str(e)})
@@ -443,6 +453,15 @@ async def setMyName(request: Request):
         signature = data['signature']
         name = data['name']
         response = await Driver.setMyName(pubkey, message, signature, name)
+        return JSONResponse(content=response)
+    except Exception as e:
+        return JSONResponse(content={"success": False, "message": str(e)})
+@app.post("/getUserProfile")
+async def getUserProfile(request: Request):
+    try:
+        data = await request.json()
+        pubkey = data['pubkey'].replace("0x", "")
+        response = await Driver.getUserProfile(pubkey)
         return JSONResponse(content=response)
     except Exception as e:
         return JSONResponse(content={"success": False, "message": str(e)})

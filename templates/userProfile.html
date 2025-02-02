@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile - Chia Rock Paper & Scissors Game</title>
+    <link rel="icon" href="/static/images/logo_150x150.jpg" type="image/jpg">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/7.0.0/mdb.dark.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism.min.css" rel="stylesheet" />
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+
+
+</head>
+
+<body>
+    <header>
+        <nav class="navbar navbar-expand-lg ">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="/">
+                    <img src="/static/images/logo_150x150.jpg" height="20" alt="Chia RPS Game" loading="lazy" />
+                    Chia RPS Game
+                </a>
+                <button class="navbar-toggler" type="button" data-mdb-collapse-init data-mdb-target="#navbarNav"
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        <li class="nav-item ">
+                            <a class="nav-link" href="/openGames">Open Games</a>
+                        </li>
+                        <li class="nav-item ">
+                            <a class="nav-link" href="/historyGames">Completed Games</a>
+                        </li>
+                        <li class="nav-item ">
+                            <a class="nav-link" href="/leaderboard">Leaderboard</a>
+                        </li>
+                        <li class="nav-item ">
+                            <a class="nav-link" href="https://github.com/jjldv/ChiaRPSGame" target="_blank">Git</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="https://mintgarden.io/collections/amlitoverse-col1aspdzsk7hulkem4xqylpr5c3yufnuts95svlqxqnm9qfzwfpy8wq5drdca" target="_blank">AmlitoVerse NFT</a>
+                        </li>
+                        <li class="nav-item">
+                            <span class="nav-link" id="nodeStatus"></span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="dropdown">
+                    <a data-mdb-dropdown-init class="dropdown-toggle d-flex align-items-center hidden-arrow" href="#"
+                        id="navbarDropdownMenuAvatar" role="button" aria-expanded="false">
+                        <img src="/static/images/ProfilePictureNotLoged.jpg" id="ProfilePicture" class="rounded-circle" height="25"
+                             loading="lazy" />
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownMenuAvatar" id="UserUI">
+                        <li>
+                            <a class="dropdown-item"  >Login</a>
+                        </li>
+                       
+                    </ul>
+                </div>
+
+            </div>
+        </nav>
+
+    </header>
+    <main class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-12">
+                <div class="bg-dark text-white shadow-lg mx-auto p-4" style="background: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.2) 100%); max-width: 1300px;">
+                    <!-- Profile Header -->
+                    <div class="text-center mb-5">
+                        <h2 class="display-4 text-success mb-2" id="playerName">----</h2>
+                        <p class="text-muted mb-2 text-truncate" id="playerPublicKey" style="max-width: 100%;">----</p>
+                        <div class="badge bg-success" id="userRank">----</div>
+                    </div>
+
+                    <!-- Stats Grid -->
+                    <div class="row g-4 mb-5 justify-content-center">
+                        <div class="col-md-6 col-sm-6">
+                            <div class="stat-card p-4 text-center">
+                                <div class="d-flex justify-content-center mb-3">
+                                    <div class="stat-icon">
+                                        <i class="fas fa-coins"></i>
+                                    </div>
+                                </div>
+                                <h6 class="text-muted">Balance</h6>
+                                <div class="finance-stats">
+                                    <div class="mb-2">
+                                        <span class="text-success d-block">
+                                            <i class="fas fa-arrow-up"></i> Won: 
+                                            <span id="totalWon">----</span>
+                                        </span>
+                                        <span class="text-danger d-block">
+                                            <i class="fas fa-arrow-down"></i> Lost: 
+                                            <span id="totalLost">----</span>
+                                        </span>
+                                    </div>
+                                    <div class="total-balance mb-2">
+                                        <span id="totalBalance" class="d-block"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <div class="stat-card p-4 text-center">
+                                <div class="d-flex justify-content-center mb-3">
+                                    <div class="stat-icon">
+                                        <i class="fas fa-trophy"></i>
+                                    </div>
+                                </div>
+                                <h6 class="text-muted">Win Rate</h6>
+                                <h3 class="text-success" id="winRate">----</h3>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <a href="#" id="totalGamesHref">
+                                <div class="stat-card p-4 text-center">
+                                    <div class="d-flex justify-content-center mb-3">
+                                        <div class="stat-icon">
+                                            <i class="fas fa-gamepad"></i>
+                                        </div>
+                                    </div>
+                                    <h6 class="text-muted">Completed Games</h6>
+                                    <h3 class="text-success" id="totalCompletedGames">----</h3>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Additional Stats Row -->
+                    <div class="row g-4 mb-5 justify-content-center">
+                        <div class="col-md-3 col-sm-6">
+                            <a href="#" id="totalOpenGamesHref">
+                                <div class="stat-card p-4 text-center">
+                                    <div class="d-flex justify-content-center mb-3">
+                                        <div class="stat-icon">
+                                            <i class="fas fa-gamepad"></i>
+                                        </div>
+                                    </div>
+                                    <h6 class="text-muted">Open Games</h6>
+                                    <h3 class="text-success" id="totalOpenGames">----</h3>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <a href="#" id="bigestWinHref">
+                                <div class="stat-card p-4 text-center">
+                                    <div class="d-flex justify-content-center mb-3">
+                                        <div class="stat-icon">
+                                            <i class="fas fa-chart-line"></i>
+                                        </div>
+                                    </div>
+                                    <h6 class="text-muted">Biggest Win</h6>
+                                    <h3 class="text-success" id="biggestWin">----</h3>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <a href="#"  id="mostPlayedAgainst">
+                                <div class="stat-card p-4 text-center">
+                                    <div class="d-flex justify-content-center mb-3">
+                                        <div class="stat-icon">
+                                            <i class="fas fa-users"></i>
+                                        </div>
+                                    </div>
+                                    <h6 class="text-muted">Most Played Against</h6>
+                                    <h3 class="text-success" id="rivalName">----</h3>
+                                    <small class="text-muted">----</small>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <div class="stat-card p-4 text-center">
+                                <div class="d-flex justify-content-center mb-3">
+                                    <div class="stat-icon">
+                                        <i class="fas fa-calendar-check"></i>
+                                    </div>
+                                </div>
+                                <h6 class="text-muted">Active Since</h6>
+                                <h3 class="text-success" id="joinDate">----</h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Detailed Stats -->
+                    <div class="row g-4 justify-content-center">
+                        <!-- Game Record -->
+                        <div class="col-lg-12">
+                            <div class="card bg-dark h-100" style="width: 100%;">
+                                <div class="card-header bg-transparent border-bottom border-success text-center">
+                                    <h5 class="text-success mb-0">
+                                        <i class="fas fa-chart-pie me-2"></i>Game Record
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-4">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="text-muted">Wins</span>
+                                            <span class="text-success" id="totalWins">----</span>
+                                        </div>
+                                        <div class="progress mt-2" style="height: 8px;">
+                                            <div class="progress-bar bg-success" role="progressbar" style="width: 0%"></div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-4">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="text-muted">Losses</span>
+                                            <span class="text-danger" id="totalLosses">----</span>
+                                        </div>
+                                        <div class="progress mt-2" style="height: 8px;">
+                                            <div class="progress-bar bg-danger" role="progressbar" style="width: 0%"></div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="text-muted">Draws</span>
+                                            <span class="text-warning" id="totalDraws">----</span>
+                                        </div>
+                                        <div class="progress mt-2" style="height: 8px;">
+                                            <div class="progress-bar bg-warning" role="progressbar" style="width: 0%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recent Games -->
+                        <div class="col-lg-12">
+                            <div class="card bg-dark h-100" style="width: 100%;">
+                                <div class="card-header bg-transparent border-bottom border-success text-center">
+                                    <h5 class="text-success mb-0">
+                                        <i class="fas fa-history me-2"></i>Recent Games
+                                    </h5>
+                                </div>
+                                <div class="card-body px-0">
+                                    <div class="table-responsive">
+                                        <table class="table table-dark table-hover">
+                                            <thead>
+                                                <tr class="text-success">
+                                                    <th class="text-center">Date</th>
+                                                    <th class="text-center">Move</th>
+                                                    <th class="text-center">VS</th>
+                                                    <th class="text-center">Result</th>
+                                                    <th class="text-center">Amount</th>
+                                                    <th class="text-center">Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="recentGames">
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js";
+        import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-messaging.js";
+        window.firebaseModules = { initializeApp, getMessaging, getToken };
+    </script>
+    <script src="/static/js/libs/qrcode.min.js"></script>
+    <script src="/static/js/libs/greenweb.js"></script>
+    <script src="/static/js/Firebase.js"></script>
+    <script src="/static/js/Goby.js"></script>
+    <script src="/static/js/libs/mdb.umd.min.js"></script>
+    <script src="https://unpkg.com/@walletconnect/sign-client@2.10.6/dist/index.umd.js"></script>
+    <script src="https://unpkg.com/@walletconnect/types@2.0.0-beta.55/dist/umd/index.min.js"></script>
+    <script src="https://unpkg.com/@walletconnect/utils@2.0.0-beta.55/dist/umd/index.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script src="/static/js/Utils.js"></script>
+    <script src="/static/js/ModalGeneric.js"></script>
+    <script src="/static/js/ModalGobyWallet.js"></script>
+    <script src="/static/js/Session.js"></script>
+    <script src="/static/js/userProfile.js"></script>
+</body>
+
+</html>

@@ -14,7 +14,7 @@ class Session {
         this.setUserSessionUI(false);
         this.initAsync();
         this.eventListeners = {};
-        this.startPeriodicUpdate(document.getElementById("nodeStatus"));
+        //this.startPeriodicUpdate(document.getElementById("nodeStatus"));
     }
     async initAsync() {
         try {
@@ -102,7 +102,7 @@ class Session {
         if (isLoged) {
             profilePicture.src = this.profilePictureLoged;
             userUI.innerHTML = `
-                <li class="dropdown-item" id="NameLabel" ></li>
+                <li><a class="dropdown-item" href="#" id="NameLabel"></a></li>
                 <li><a class="dropdown-item" href="/createGame">Create Game</a></li>
                 <li><a class="dropdown-item" id="btnSetMyName" >Set my name</a></li>
                 <li><a class="dropdown-item" href="/userOpenGames/${this.pubkey}">My Open Games</a></li>
@@ -123,6 +123,7 @@ class Session {
             let UserName = await Utils.getUserName(this.pubkey);
             if (UserName.success) {
                 document.getElementById("NameLabel").innerHTML = UserName.name;
+                document.getElementById("NameLabel").href = `/userProfile/${this.pubkey}`;
             }
         } else {
             profilePicture.src = this.profilePictureNotLoged;

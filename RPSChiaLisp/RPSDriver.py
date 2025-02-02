@@ -1,6 +1,7 @@
 import ast
 import asyncio
 import json
+import re
 import string
 from chia.types.blockchain_format.coin import Coin
 from chia.types.blockchain_format.sized_bytes import bytes32
@@ -20,12 +21,14 @@ from chia.util.default_root import DEFAULT_ROOT_PATH
 from blspy import PrivateKey, AugSchemeMPL, G2Element
 from clvm_tools.binutils import disassemble
 from blspy import (PrivateKey, AugSchemeMPL,G1Element, G2Element)
+from fastapi import Path
 from RPSChiaLisp.WalletClient import WalletClient
 from RPSChiaLisp.FNClient import FNClient
 from RPSChiaLisp.GameDatabase import GameDatabase
 import datetime
 from RPSChiaLisp.Firebase import Firebase
 import requests
+from pathlib import Path
 
 
 class RPSDriver:
@@ -66,7 +69,7 @@ class RPSDriver:
             print("Found history games", len(historyGames["historyGames"]))
             if historyGames["success"]:
                 for game in historyGames["historyGames"]:
-                    print("processing game", game["coin_id"])
+                    print("processing history game", game["coin_id"])
                     gameF = (
                             game["parent_coin_info"],
                             game["coin_id"],
@@ -109,7 +112,7 @@ class RPSDriver:
             print("Found open games", len(openGames["openGames"]))
             if openGames["success"]:
                 for game in openGames["openGames"]:
-                    print("processing game", game["coin_id"])
+                    print("processing open game", game["coin_id"])
                     gameF = (
                             game["parent_coin_info"],
                             game["coin_id"],
@@ -154,39 +157,145 @@ class RPSDriver:
             return {"success": False, "message": str(e)}
     async def getOpenGamesDB(self):
         try:
-            openGames = self.GameDatabase.getOpenGames()
-            return {"success": True, "openGames": openGames}
+            historyGames = self.GameDatabase.getOpenGames()
+            processed_games = []
+            for historyGame in historyGames:
+                if historyGame["namePlayer1"] != historyGame['publicKeyPlayer1']:
+                    historyGame["gameStatusDescription"] = re.sub(r'player 1', historyGame["namePlayer1"], historyGame["gameStatusDescription"], flags=re.IGNORECASE)
+                if historyGame["publicKeyPlayer2"] != "----" and historyGame["publicKeyPlayer2"] != historyGame['namePlayer2']:
+                    historyGame["gameStatusDescription"] = re.sub(r'player 2', historyGame["namePlayer2"], historyGame["gameStatusDescription"], flags=re.IGNORECASE)
+                processed_game = {
+                    'date': historyGame['dateGame'],
+                    'player1_move': historyGame['player1_move'],
+                    'player2_move': '❓',
+                    'player1_emoji': historyGame['player1_emoji'],
+                    'player2_emoji': '❓',
+                    'namePlayer1': historyGame['namePlayer1'],
+                    'namePlayer2': historyGame['namePlayer2'],
+                    'publicKeyPlayer1': historyGame['publicKeyPlayer1'],
+                    'publicKeyPlayer2': historyGame['publicKeyPlayer2'],
+                    'amount': historyGame['bet_amount'],
+                    'status': historyGame['game_status'],
+                    'result': "", 
+                    'gameStatusDescription': historyGame['gameStatusDescription'],
+                    'coinId': historyGame['coinId'],
+                    'publicKeyWinner': historyGame['publicKeyWinner']
+                }
+                processed_games.append(processed_game)
+            return {"success": True, "historyGames": processed_games}
         except Exception as e:
             return {"success": False, "message": str(e)}
     async def getHistoryGamesDB(self):
         try:
             historyGames = self.GameDatabase.getHistoryGames()
-            return {"success": True, "historyGames": historyGames}
+            processed_games = []
+            for historyGame in historyGames:
+                if historyGame["namePlayer1"] != historyGame['publicKeyPlayer1']:
+                    historyGame["gameStatusDescription"] = re.sub(r'player 1', historyGame["namePlayer1"], historyGame["gameStatusDescription"], flags=re.IGNORECASE)
+                if historyGame["publicKeyPlayer2"] != "----" and historyGame["publicKeyPlayer2"] != historyGame['namePlayer2']:
+                    historyGame["gameStatusDescription"] = re.sub(r'player 2', historyGame["namePlayer2"], historyGame["gameStatusDescription"], flags=re.IGNORECASE)
+                processed_game = {
+                    'date': historyGame['dateGame'],
+                    'player1_move': historyGame['player1_move'],
+                    'player2_move': historyGame['player2_move'],
+                    'player1_emoji': historyGame['player1_emoji'],
+                    'player2_emoji': historyGame['player2_emoji'],
+                    'namePlayer1': historyGame['namePlayer1'],
+                    'namePlayer2': historyGame['namePlayer2'],
+                    'publicKeyPlayer1': historyGame['publicKeyPlayer1'],
+                    'publicKeyPlayer2': historyGame['publicKeyPlayer2'],
+                    'amount': historyGame['bet_amount'],
+                    'status': historyGame['game_status'],
+                    'result': "", 
+                    'gameStatusDescription': historyGame['gameStatusDescription'],
+                    'coinId': historyGame['coinId'],
+                    'publicKeyWinner': historyGame['publicKeyWinner']
+                }
+                processed_games.append(processed_game)
+            return {"success": True, "historyGames": processed_games}
         except Exception as e:
             return {"success": False, "message": str(e)}
     async def getGameDetailsDB(self, coinId: str):
         try:
-            game = self.GameDatabase.getGameDetails(coinId)
+            gameCoins = self.GameDatabase.getCoinsChain(coinId)
+            for coin in gameCoins:
+                if coin["namePlayer1"] != coin["publicKeyPlayer1"]:
+                    coin["gameStatusDescription"] = re.sub(r'player 1', coin["namePlayer1"], coin["gameStatusDescription"], flags=re.IGNORECASE)
+                if coin["publicKeyPlayer2"] != "----" and coin["namePlayer2"] != coin["publicKeyPlayer2"]:
+                    coin["gameStatusDescription"] = re.sub(r'player 2', coin["namePlayer2"], coin["gameStatusDescription"], flags=re.IGNORECASE)
+            game = gameCoins[-1]
+            pendingTransactions = await self.getCoinPendingTransaction(game["coinId"])
             
+            if "action" in pendingTransactions and coin["namePlayer1"] != coin["publicKeyPlayer1"]:
+                pendingTransactions["action"] =  re.sub(r'player 1', coin["namePlayer1"], pendingTransactions["action"], flags=re.IGNORECASE)
+            if "action" in pendingTransactions and coin["publicKeyPlayer2"] != "----" and coin["namePlayer2"] != coin["publicKeyPlayer2"]:
+                pendingTransactions["action"] =  re.sub(r'player 2', coin["namePlayer2"], pendingTransactions["action"], flags=re.IGNORECASE)
+
+            game["puzzleRevealDisassembled"] = disassemble(Program.fromhex(game["puzzleReveal"]))
+            gamePath = Path(__file__).parent / "Game.clsp"
+            game["puzzleRevealFormatted"] = self.replaceCuriedParams(gamePath,[])
+            if "isCompleted" in pendingTransactions and pendingTransactions["isCompleted"] == True:
+                gameCoins = self.GameDatabase.getCoinsChain(game["coinId"])
+                for coin in gameCoins:
+                    if coin["namePlayer1"] != coin["publicKeyPlayer1"]:
+                        coin["gameStatusDescription"] = re.sub(r'player 1', coin["namePlayer1"], coin["gameStatusDescription"], flags=re.IGNORECASE)
+                    if coin["publicKeyPlayer2"] != "----" and coin["namePlayer2"] != coin["publicKeyPlayer2"]:
+                        coin["gameStatusDescription"] = re.sub(r'player 2', coin["namePlayer2"], coin["gameStatusDescription"], flags=re.IGNORECASE)
+                game = gameCoins[-1]
             if game["stage"] == 3:
                 game["selectionPlayer2"] = "Reveal P1 to see"
                 game["emojiSelectionPlayer2"] = self.getEmoji(0)
-            
-            game["puzzleRevealDisassembled"] = disassemble(Program.fromhex(game["puzzleReveal"]))
-            gameCoins = self.GameDatabase.getCoinsChain(coinId)
-            return {"success": True, "game": game, "gameCoins": gameCoins }
+            return {"success": True, "game": game, "gameCoins": gameCoins , "pendingTransactions": pendingTransactions}
         except Exception as e:
             return {"success": False, "message": str(e)}
     async def getUserHistoryGamesDB(self, pubkey: str):
         try:
             historyGames = self.GameDatabase.getUserHistoryGames(pubkey)
-            return {"success": True, "historyGames": historyGames}
+            processed_games = []
+            for historyGame in historyGames:
+                if historyGame["namePlayer1"] != historyGame['publicKeyPlayer1']:
+                    historyGame["gameStatusDescription"] = re.sub(r'player 1', historyGame["namePlayer1"], historyGame["gameStatusDescription"], flags=re.IGNORECASE)
+                if historyGame["publicKeyPlayer2"] != "----" and historyGame["publicKeyPlayer2"] != historyGame['namePlayer2']:
+                    historyGame["gameStatusDescription"] = re.sub(r'player 2', historyGame["namePlayer2"], historyGame["gameStatusDescription"], flags=re.IGNORECASE)
+                processed_game = {
+                    'date': historyGame['dateGame'],
+                    'move': historyGame['player_move'],
+                    'moveEmoji': historyGame['player_emoji'],
+                    'opponent': historyGame['opponent_name'],
+                    'opponentKey': historyGame['opponent_key'],
+                    'amount': historyGame['bet_amount'],
+                    'status': historyGame['game_status'],
+                    'result': self.getGameResultForPlayer(historyGame['publicKeyWinner'], pubkey, historyGame['game_status']), 
+                    'gameStatusDescription': historyGame['gameStatusDescription'],
+                    'coinId': historyGame['coinId']
+                }
+                processed_games.append(processed_game)
+            return {"success": True, "historyGames": processed_games}
         except Exception as e:
             return {"success": False, "message": str(e)}
     async def getUserOpenGamesDB(self, pubkey: str):
         try:
             openGames = self.GameDatabase.getUserOpenGames(pubkey)
-            return {"success": True, "openGames": openGames}
+            processed_games = []
+            for historyGame in openGames:
+                if historyGame["namePlayer1"] != historyGame['publicKeyPlayer1']:
+                    historyGame["gameStatusDescription"] = re.sub(r'player 1', historyGame["namePlayer1"], historyGame["gameStatusDescription"], flags=re.IGNORECASE)
+                if historyGame["publicKeyPlayer2"] != "----" and historyGame["publicKeyPlayer2"] != historyGame['namePlayer2']:
+                    historyGame["gameStatusDescription"] = re.sub(r'player 2', historyGame["namePlayer2"], historyGame["gameStatusDescription"], flags=re.IGNORECASE)
+                processed_game = {
+                    'date': historyGame['dateGame'],
+                    'move': historyGame['player_move'],
+                    'moveEmoji': historyGame['player_emoji'],
+                    'opponent': historyGame['opponent_name'],
+                    'opponentKey': historyGame['opponent_key'],
+                    'amount': historyGame['bet_amount'],
+                    'status': historyGame['game_status'],
+                    'result': self.getGameResultForPlayer(historyGame['publicKeyWinner'], pubkey, historyGame['game_status']), 
+                    'gameStatusDescription': historyGame['gameStatusDescription'],
+                    'coinId': historyGame['coinId']
+                }
+                processed_games.append(processed_game)
+            return {"success": True, "games": processed_games}
         except Exception as e:
             return {"success": False, "message": str(e)}
     async def getCoinRecordsByParentIds(self, parentIds: list, includeSpentCoins: bool = False, startHeight: int = None, endHeight: int = None):
@@ -253,7 +362,7 @@ class RPSDriver:
             raise e 
     async def createSolutionClaimGame(self,coinAmount:int,fee:int):
         solutionGame = Program.to([
-                    1,
+                    4,
                     1,
                     self.ACTION_CLAIM_PLAYER2,
                     coinAmount,
@@ -538,6 +647,81 @@ class RPSDriver:
                     }
                     openGames.append(formatedCoin)
             return {"success": True, "openGames": openGames}
+        except Exception as e:
+            return {"success": False, "message": str(e)}
+    async def updateGameStatus(self, coinId: str,publicKeyP1Hex: str):
+        try:
+            publicKeyP1 = G1Element.from_bytes(bytes.fromhex(publicKeyP1Hex))
+            player1WalletMod = self.GAME_WALLET_MOD.curry(publicKeyP1)
+            player1OracleMod = self.PLAYER_ORACLE_MOD.curry(self.SERVER_GAME_PUBLIC_KEY,publicKeyP1,self.GAME_MOD.get_tree_hash())
+
+            coinRecord = await self.getCoinRecord(coinId)
+            gameParentCoins = await self.getGameParentCoins(coinRecord,player1WalletMod)
+            gameChildCoins = await self.getGameChildCoins(coinRecord,player1OracleMod)
+            allGameCoins = gameParentCoins + gameChildCoins
+            CoinsFormated = []
+            for gameCoin in allGameCoins:
+                infoStage = await self.getGameStageInfo(gameCoin)
+                formatedCoin = { 
+                    'parent_coin_info': gameCoin.coin.parent_coin_info.hex(),
+                    'puzzle_hash': gameCoin.coin.puzzle_hash.hex(),
+                    'amount': gameCoin.coin.amount,
+                    'coin_id': gameCoin.coin.name().hex(),
+                    'confirmed_block_index': gameCoin.confirmed_block_index,
+                    'spent_block_index': gameCoin.spent_block_index,
+                    'coinbase': gameCoin.coinbase,
+                    'timestamp': gameCoin.timestamp,
+                    'date': datetime.datetime.fromtimestamp(gameCoin.timestamp).strftime('%d %b %Y %H:%M') + " hrs",
+                    'compromisePlayer1': infoStage["gameParams"]["compromisePlayer1"],
+                    'puzzleHashPlayer1': infoStage["gameParams"]["puzzleHashPlayer1"],
+                    'publicKeyPlayer1': infoStage["gameParams"]["publicKeyPlayer1"],
+                    'publicKeyPlayer2': infoStage["gameParams"]["publicKeyPlayer2"],
+                    'selectionPlayer1': infoStage["gameParams"]["selectionPlayer1"],
+                    'selectionPlayer2': infoStage["gameParams"]["selectionPlayer2"],
+                    "secretKeyPlayer1": infoStage["gameParams"]["secretKeyPlayer1"],
+                    "emojiSelectionPlayer1": infoStage["gameParams"]["emojiSelectionPlayer1"],
+                    "emojiSelectionPlayer2": infoStage["gameParams"]["emojiSelectionPlayer2"],
+                    'gameResult': infoStage["gameResult"],
+                    'stage': infoStage["stage"],
+                    'publicKeyWinner': infoStage["publicKeyWinner"],
+                    'stageName': infoStage["stageName"],
+                    'oracleConfirmedBlockIndex': gameCoin.confirmed_block_index,
+                    'puzzleHash': infoStage["GameMod"].get_tree_hash().hex(),
+                    'puzzleReveal': infoStage["GameMod"].__str__()
+                }
+                CoinsFormated.append(formatedCoin)
+            for game in CoinsFormated:
+                print("processing update game", game["coin_id"])
+                gameF = (
+                        game["parent_coin_info"],
+                        game["coin_id"],
+                        game["puzzleHash"],
+                        game["puzzleReveal"],
+                        game["gameResult"],
+                        game["stage"],
+                        game["stageName"],
+                        game["publicKeyWinner"],
+                        game["publicKeyPlayer1"],
+                        game["publicKeyPlayer2"],
+                        game["compromisePlayer1"],
+                        game["selectionPlayer1"],
+                        game["secretKeyPlayer1"],
+                        game["emojiSelectionPlayer1"],
+                        game["selectionPlayer2"],
+                        game["emojiSelectionPlayer2"],
+                        game["date"],
+                        game["timestamp"],
+                        game["amount"],
+                        game["confirmed_block_index"],
+                        game["spent_block_index"],
+                        game["oracleConfirmedBlockIndex"],
+                        "SPENT" if game["spent_block_index"] != 0 else "UNSPENT"
+
+                    )
+                if self.GameDatabase.existsCoinId(game["coin_id"]) == True:
+                    self.GameDatabase.deleteCoinId(game["coin_id"])
+                self.GameDatabase.insertGameData(gameF)
+            return {"success": True, "message": "Game updated"}
         except Exception as e:
             return {"success": False, "message": str(e)}
     #TODO: Remove hadouken
@@ -911,18 +1095,14 @@ class RPSDriver:
     async def getCoinPendingTransaction(self, coinId: str):
         try:
             full_node_client = await FNClient.getClient()
-            mempool_items = await full_node_client.get_all_mempool_items()
+            coin = await full_node_client.get_mempool_items_by_coin_name(bytes32.fromhex(coinId))
             coin_spends = None
-            spend_bundle = None
-
-            for item in mempool_items.values():
-                for coin_spend in item['spend_bundle']['coin_spends']:
+            if coin and coin['mempool_items']:
+                spend_bundle = coin['mempool_items'][0]['spend_bundle']
+                for coin_spend in spend_bundle['coin_spends']:
                     if await self.calculateCoinId(coin_spend['coin']['parent_coin_info'], coin_spend['coin']['puzzle_hash'], coin_spend['coin']['amount']) == coinId:
                         coin_spends = coin_spend
-                        spend_bundle = item['spend_bundle']
                         break
-                if coin_spends:
-                    break
 
             if coin_spends:
                 curriedParams = await self.getPuzzleRevealCurriedParams(Program.fromhex(coin_spends['puzzle_reveal']).uncurry()[1])
@@ -936,29 +1116,46 @@ class RPSDriver:
                     elif solutionParams["params"][0] == "02":
                         action = "Entering Game...Player 2 Bet: " + str(self.MojoToXCH(int(solutionParams["params"][5], 16)))
                 else:
+                    coinInfo  = self.GameDatabase.getCoin(coinId)
                     if int(solutionParams["params"][-3], 16) == self.ACTION_JOIN_PLAYER1:
                         action = "Player 1 Joining Game"
                     elif int(solutionParams["params"][-3], 16) == self.ACTION_JOIN_PLAYER2:
                         action = "Player 2 Joining Game"
+                        if coinInfo != None:
+                            coinInfo["namePlayer2"] = await self.GameDatabase.getPlayerName(solutionParams["params"][1])
+                            coinInfo["publicKeyPlayer2"] = solutionParams["params"][1]
                     elif int(solutionParams["params"][-3], 16) == self.ACTION_CLOSE_GAME:
                         action = "Player 1 Closing Game"
                     elif int(solutionParams["params"][-3], 16) == self.ACTION_REVEAL:
                         action = "Player 1 Revealing"
                     elif int(solutionParams["params"][-3], 16) == self.ACTION_CLAIM_PLAYER2:
                         action = "Player 2 Claiming Win"
+                if self.GameDatabase.isPendingTransaction(coinId) == False:
+                    self.GameDatabase.setPendingTransaction(coinId)
+                if coinInfo != None and coinInfo["namePlayer1"] != coinInfo["publicKeyPlayer1"]:
+                    action = re.sub(r'player 1', coinInfo["namePlayer1"], action, flags=re.IGNORECASE)
+                if coinInfo != None and coinInfo["namePlayer2"] != "" and coinInfo["namePlayer2"] != coinInfo["publicKeyPlayer2"]:
+                    action = re.sub(r'player 2', coinInfo["namePlayer2"], action, flags=re.IGNORECASE)
 
                 return {
                     "success": True,
                     "message": "Pending transaction found",
                     "action": action,
-                    "pendingTransaction": [item],
+                    "pendingTransaction": [coin_spends],
                     "spendBundle": spend_bundle,
                     "coin": coin_spends["coin"],
+                    "isCompleted": False,
+                    "isPending": True
                 }
             else:
-                return {"success": True, "message": "No pending transaction found", "pendingTransaction": []}
+                isPending = self.GameDatabase.isPendingTransaction(coinId)
+                if isPending:
+                    self.GameDatabase.setNotPendingTransaction(coinId)
+                    coinData = self.GameDatabase.getCoin(coinId)
+                    await self.updateGameStatus(coinId,coinData["publicKeyPlayer1"])
+                return {"success": True, "message": "No pending transaction found", "pendingTransaction": [], "isCompleted": isPending, "isPending": False}
         except Exception as e:
-            return {"success": False, "message": str(e)}
+            return {"success": False, "message": str(e) ,"isCompleted": False, "isPending": False}
         finally:
             full_node_client.close()
             await full_node_client.await_closed()
@@ -1039,7 +1236,7 @@ class RPSDriver:
             gameParams = await self.getGameParams(infoStage["stage"],infoStage["curriedParams"],infoSolutionParams["params"])
             publicOracleCoin,player1OracleCoin,player2OracleCoin = await self.getGameOracleCoins(gameCoin,std_hash(infoStage["GameMod"].get_tree_hash()).hex(),gameParams["publicKeyPlayer1"],gameParams["publicKeyPlayer2"])
             solutionGame = Program.to([
-                    1,
+                    4,
                     1,
                     self.ACTION_CLAIM_PLAYER2,
                     gameCoin.coin.amount,
@@ -1735,6 +1932,114 @@ class RPSDriver:
             return {"success": True, "name": name}
         except Exception as e:
             return {"success": False, "message": str(e)}
+    async def getUserProfile(self, pubkey: str):
+        """Get complete user profile with all game statistics"""
+        try:
+            userInfo = await self.getUserName(pubkey)
+            name = userInfo["name"]
+
+            total_games = self.GameDatabase.getPlayerTotalCompletedGames(pubkey)
+            totalOpenGames = self.GameDatabase.getPlayerTotalOpenGames(pubkey)
+            if total_games == 0:
+                return {
+                    "success": True,
+                    'name': name,
+                    'publicKey': pubkey,
+                    'stats': {
+                        'totalCompletedGames': 0,
+                        'totalOpenGames': totalOpenGames,
+                        'winRate': 0,
+                        'record': {'wins': 0, 'losses': 0, 'draws': 0},
+                        'favoriteMove': None,
+                        'amounts': {'totalWon': 0, 'totalLost': 0, 'avgBet': 0, 'biggestWin': 0},
+                        'longestWinStreak': 0,
+                        'mostPlayedAgainst': None,
+                        'activeSince': None
+                    },
+                    'recentGames': []
+                }
+
+            record = self.GameDatabase.getPlayerWinLossRecord(pubkey)
+            #move_stats = self.GameDatabase.getPlayerMoveStats(pubkey)
+            amount_stats = self.GameDatabase.getPlayerAmountStats(pubkey)
+            #win_streak = self.GameDatabase.getPlayerWinStreak(pubkey)
+            most_played = self.GameDatabase.getMostPlayedAgainst(pubkey)
+            first_game = self.GameDatabase.getPlayerFirstGame(pubkey)
+            recent_games = self.GameDatabase.getRecentGames(pubkey)
+            rank_info = self.GameDatabase.getPlayerRank(pubkey)
+            win_rate = round((record['wins'] / total_games * 100), 1) if total_games > 0 else 0
+
+            favorite_move = None
+            # if move_stats:
+            #     favorite = move_stats[0]  # Most used move
+            #     favorite_move = {
+            #         'move': favorite['move'],
+            #         'emoji': self.getEmoji(int(favorite['move'])),  
+            #         'usagePercent': round((favorite['times_used'] / total_games * 100), 1)
+            #     }
+
+            processed_games = []
+            for game in recent_games:
+                if game['publicKeyPlayer1'] != game['namePlayer1']:
+                    game['gameStatusDescription'] = re.sub(r'player 1', game["namePlayer1"], game["gameStatusDescription"], flags=re.IGNORECASE)
+                if game["publicKeyPlayer2"] != "----" and game["namePlayer2"] != game["publicKeyPlayer2"]:
+                    game["gameStatusDescription"] = re.sub(r'player 2', game["namePlayer2"], game["gameStatusDescription"], flags=re.IGNORECASE)
+                processed_game = {
+                    'date': game['dateGame'],
+                    'move': game['player_move'],
+                    'moveEmoji': game['player_emoji'],
+                    'opponent': game['opponent_name'],
+                    'opponentKey': game['opponent_key'],
+                    'amount': game['bet_amount'],
+                    'status': game['game_status'],
+                    'result': self.getGameResultForPlayer(game['publicKeyWinner'], pubkey, game['game_status']), 
+                    'gameStatusDescription': game['gameStatusDescription'],
+                    'coinId': game['coinId']
+                }
+                processed_games.append(processed_game)
+
+            profile = {
+                'success': True,
+                'name': name,
+                'publicKey': pubkey,
+                'rank': rank_info['rank'],
+                'stats': {
+                    'totalCompletedGames': total_games,
+                    'totalOpenGames': totalOpenGames,
+                    'winRate': win_rate,
+                    'record': record,
+                    'favoriteMove': favorite_move,
+                    'amounts': {
+                        'totalWon': amount_stats['total_won'],
+                        'totalLost': amount_stats['total_lost'],
+                        'avgBet': round(amount_stats['avg_bet'], 3),
+                        'biggestWin': amount_stats['biggest_win'],
+                        'coinIdBiggestWin': amount_stats['coinId_biggest_win']
+                    },
+                    'mostPlayedAgainst': {
+                        'publicKey': most_played['opponent'] if most_played else None,
+                        'name': most_played['opponent_name'] if most_played else None,
+                        'gamesPlayed': most_played['games_played'] if most_played else 0
+                    } if most_played else None,
+                    'activeSince': first_game
+                },
+                'recentGames': processed_games
+            }
+
+            return profile
+
+        except Exception as e:
+            return {"success": False, "message": str(e)}
+
+    def getGameResultForPlayer(self, winner_key, player_key, game_status):
+        """Helper function to determine game result from player's perspective"""
+        if game_status == 'OPEN':
+            return 'OPEN'
+        if game_status == 'CLOSED':
+            return 'CLOSED'
+        if winner_key is None:
+            return 'DRAW'
+        return 'WIN' if winner_key == player_key else 'LOSS'
     async def registerFirebaseToken(self, pubkey: str, token: str):
         try:
             self.GameDatabase.setFirebaseToken(pubkey, token)
@@ -1752,6 +2057,58 @@ class RPSDriver:
                 action_url=action_url,
                 additional_data=None
             )
+    async def getGlobalStats(self):
+        try:
+
+            global_stats = self.GameDatabase.getGlobalStats()
+            top_winners = self.GameDatabase.getTopWinners(limit=10)
+            top_earners = self.GameDatabase.getTopEarners(limit=10)
+            move_stats = self.GameDatabase.getMoveStatistics()
+
+            response = {
+                "success": True,
+                "data": {
+                    "globalStats": {
+                        "totalClosedGames": global_stats['total_completed_games'],
+                        "totalOpenGames": global_stats['total_open_games'],
+                        "totalPlayers": global_stats['total_players'],
+                        "totalVolume": global_stats['total_volume'],
+                        "avgBet": global_stats['avg_bet'],
+                        "biggestGame": global_stats['biggest_game'],
+                        "biggestGameCoinId": global_stats['coinId_biggest_game']
+                    },
+                    "rankings": {
+                        "topWinners": [
+                            {
+                                "player": winner['player'],
+                                "playerName": winner['player_name'],
+                                "wins": winner['wins'],
+                                "amountWon": winner['amount_won']
+                            } for winner in top_winners
+                        ],
+                        "topEarners": [
+                            {
+                                "player": earner['player'],
+                                "playerName": earner['player_name'],
+                                "netEarnings": earner['net_earnings'],
+                                "totalGames": earner['total_games']
+                            } for earner in top_earners
+                        ]
+                    },
+                    "moveStats": [
+                        {
+                            "move": stat['winning_move'],
+                            "timesWon": stat['times_won'],
+                            "winPercentage": stat['win_percentage']
+                        } for stat in move_stats
+                    ]
+                }
+            }
+
+            return response
+
+        except Exception as e:
+            return {"success": False, "message": str(e)}
     async def fetch(self, endpoint: str, data: dict):
         try:
             url = f"{self.urlApi}/{endpoint}"
@@ -1759,3 +2116,20 @@ class RPSDriver:
             return response.json()
         except Exception as e:
             return {"success": False, "message": str(e)}
+    def replaceCuriedParams(self,file_path: str, curried_values: list) -> str:
+        try:
+            with open(file_path, "r", encoding="utf-8") as file:
+                chialisp_code = file.read()
+
+            curried_matches = re.findall(r"\b[A-Z_]+\b", chialisp_code)
+
+            num_replacements = min(len(curried_matches), len(curried_values))
+
+            for i in range(num_replacements):
+                chialisp_code = re.sub(rf'\b{re.escape(curried_matches[i])}\b', str(curried_values[i]), chialisp_code, count=1)
+
+            return chialisp_code
+
+        except Exception as e:
+            return f"Error al procesar el archivo: {str(e)}"
+            

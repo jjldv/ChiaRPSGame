@@ -28,10 +28,10 @@
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                         <li class="nav-item ">
-                            <a class="nav-link" href="/openGames">Active Games</a>
+                            <a class="nav-link" href="/openGames">Open Games</a>
                         </li>
                         <li class="nav-item ">
-                            <a class="nav-link" href="/historyGames">History Games</a>
+                            <a class="nav-link" href="/historyGames">Completed Games</a>
                         </li>
                         <li class="nav-item ">
                             <a class="nav-link" href="/leaderboard">Leaderboard</a>
@@ -62,48 +62,196 @@
             </div>
         </nav>
     </header>
-    <main class="container mt-4">
-        <section id="inicio" class="text-center">
-            <div class="alert alert-warning" role="alert" style="max-width: 700px; margin: 0 auto; margin-bottom: 30px;">
-                <strong>If you want to keep this server online, please donate to:</strong> <span style="font-weight: bold; color: #000000;">xch1a63283n8rh7yksz03774s5jaq2rw5f4je5w3f7ux7esw9y6allusdrlhg5</span>
+    <main class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-12">
+                <div class="bg-dark text-white shadow-lg mx-auto p-4" style="background: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.2) 100%); max-width: 1300px;">
+                    
+                    <!-- Donation Alert -->
+                    <div class="donation-alert mb-4">
+                        <div class="alert border-success bg-dark p-3 position-relative" role="alert">
+                            <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-2" aria-label="Close" onclick="this.parentElement.style.display='none';"></button>
+                            <div class="text-center">
+                                <div class="mb-2">
+                                    <i class="fas fa-heart text-success fa-2x"></i>
+                                </div>
+                                <strong class="text-success d-block mb-1">Support the Game</strong>
+                                <p class="mb-2">If you want to keep this server online, please donate to:</p>
+                                <div class="donation-address">
+                                    <div class="address-container">
+                                        <code class="bg-dark text-success p-2 rounded d-block text-break" id="donationAddress">xch1a63283n8rh7yksz03774s5jaq2rw5f4je5w3f7ux7esw9y6allusdrlhg5</code>
+                                        <button class="copy-btn" onclick="Utils.copyToClipboard('#donationAddress')">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+    
+                    <!-- Game Title -->
+                    <div class="text-center mb-5">
+                        <h1 class="display-4 text-success mb-3">
+                            <i class="fas fa-gamepad me-3"></i>
+                            Chia Rock Paper Scissors
+                        </h1>
+                        <div class="game-icons d-flex justify-content-center gap-4 mb-4">
+                            <div class="stat-icon p-3"><span style="font-size: 2rem;">🪨</span></div>
+                            <div class="stat-icon p-3"><span style="font-size: 2rem;">📄</span></div>
+                            <div class="stat-icon p-3"><span style="font-size: 2rem;">✂️</span></div>
+                        </div>
+                        <p class="lead text-muted">Play, Win, and Earn XCH in this Decentralized Game</p>
+                    </div>
+                    <div class="row g-4 mb-5 justify-content-center">
+                        <div class="col-md-6 col-sm-6">
+                            <a href="/openGames">
+                                <div class="stat-card p-4 text-center">
+                                    <div class="d-flex justify-content-center mb-3">
+                                        <div class="stat-icon">
+                                            <i class="fas fa-gamepad"></i>
+                                        </div>
+                                    </div>
+                                    <h6 class="text-muted">Open Games</h6>
+                                    <h3 class="text-success" id="totalOpenGames">----</h3>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-6 col-sm-6">
+                            <div class="stat-card p-4 text-center">
+                                <a href="/historyGames">
+                                    <div class="d-flex justify-content-center mb-3">
+                                        <div class="stat-icon">
+                                            <i class="fas fa-gamepad"></i>
+                                        </div>
+                                    </div>
+                                    <h6 class="text-muted">Completed Games</h6>
+                                    <h3 class="text-success" id="totalClosedGames">----</h3>
+                                </a>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-6">
+                            <div class="stat-card p-4 text-center">
+                                <div class="d-flex justify-content-center mb-3">
+                                    <div class="stat-icon">
+                                        <i class="fas fa-users"></i>
+                                    </div>
+                                </div>
+                                <h6 class="text-muted">Total Players</h6>
+                                <h3 class="text-success" id="totalPlayers">----</h3>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-6">
+                            <div class="stat-card p-4 text-center">
+                                <div class="d-flex justify-content-center mb-3">
+                                    <div class="stat-icon">
+                                        <i class="fas fa-coins"></i>
+                                    </div>
+                                </div>
+                                <h6 class="text-muted">Total Played</h6>
+                                <h3 class="text-success" id="totalVolume">----</h3>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-6">
+                            <div class="stat-card p-4 text-center">
+                                <a href="#" id="biggestGameLink">
+                                    <div class="d-flex justify-content-center mb-3">
+                                        <div class="stat-icon">
+                                            <i class="fas fa-trophy"></i>
+                                        </div>
+                                    </div>
+                                    <h6 class="text-muted">Biggest Game</h6>
+                                    <h3 class="text-success" id="biggestGame">----</h3>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+    
+                    <!-- How to Play Section -->
+                    <div class="card bg-dark mb-5" style="width: 100%;">
+                        <div class="card-header bg-transparent border-bottom border-success">
+                            <h2 class="text-success text-center mb-0">
+                                <i class="fas fa-book me-2"></i>How to Play
+                            </h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-4">
+                                <div class="col-md-4">
+                                    <div class="step-card p-4 text-center text-light h-100">
+                                        <div class="stat-icon mb-3">
+                                            <i class="fas fa-wallet"></i>
+                                        </div>
+                                        <h4 class="text-success">1. Connect</h4>
+                                        <p>Log in using your Goby Wallet to start playing</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="step-card p-4 text-center text-light h-100">
+                                        <div class="stat-icon mb-3">
+                                            <i class="fas fa-plus-circle"></i>
+                                        </div>
+                                        <h4 class="text-success">2. Create or Join</h4>
+                                        <p>Open a new game with your bet or join an existing one</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="step-card p-4 text-center text-light h-100">
+                                        <div class="stat-icon mb-3">
+                                            <i class="fas fa-trophy"></i>
+                                        </div>
+                                        <h4 class="text-success">3. Win & Earn</h4>
+                                        <p>Make your move and win XCH rewards</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+    
+                    <!-- Detailed Rules -->
+                    <div class="card bg-dark" style="width: 100%;">
+                        <div class="card-header bg-transparent border-bottom border-success">
+                            <h2 class="text-success text-center mb-0">
+                                <i class="fas fa-info-circle me-2"></i>Game Rules
+                            </h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-lg-8 mx-auto">
+                                    <ul class="list-group list-group-flush">
+                                        <li class="list-group-item bg-transparent text-light border-success">
+                                            <i class="fas fa-shield-alt text-success me-2"></i>
+                                            Choose your move and secure it with a private key
+                                        </li>
+                                        <li class="list-group-item bg-transparent text-light border-success">
+                                            <i class="fas fa-clock text-success me-2"></i>
+                                            Players have 24 hours to reveal their moves
+                                        </li>
+                                        <li class="list-group-item bg-transparent text-light border-success">
+                                            <i class="fas fa-gavel text-success me-2"></i>
+                                            If Player 1 doesn't reveal, Player 2 can claim the total bet
+                                        </li>
+                                        <li class="list-group-item bg-transparent text-light border-success">
+                                            <i class="fas fa-undo text-success me-2"></i>
+                                            Games without opponents can be closed after 24 hours
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+    
+                </div>
             </div>
-            <h1 style="font-size: 2.5rem; font-weight: bold; margin-bottom: 20px;">Welcome to the Chia Rock, Paper,
-                Scissors Game</h1>
-            <h2 style="font-size: 2rem; font-weight: bold; margin-bottom: 20px;">How to Play</h2>
-            <p style="font-size: 1.25rem; margin-bottom: 30px;">Follow these steps to play the game:</p>
-            <ol class="list-group list-group-numbered" style="max-width: 700px; margin: 0 auto; text-align: left;">
-                <li class="list-group-item" style="background-color: #343a40; border: none; color: #ffffff;"><strong>Log
-                        in</strong>: Use your Goby Wallet to log in.</li>
-
-                <li class="list-group-item" style="background-color: #343a40; border: none; color: #ffffff;">
-                    <strong>Open a Game</strong>: Select the amount to bet and choose Rock, Paper, or Scissors.
-                    Additionally, provide a private key to hide your selection.</li>
-                <li class="list-group-item" style="background-color: #343a40; border: none; color: #ffffff;">
-                    <strong>Wait for an Opponent</strong>: The public and player oracles will point to your game, making
-                    it accessible to other players.</li>
-                <li class="list-group-item" style="background-color: #343a40; border: none; color: #ffffff;">
-                    <strong>Join a Game</strong>: If you find an open game, join by placing a matching bet and making
-                    your selection.</li>
-                <li class="list-group-item" style="background-color: #343a40; border: none; color: #ffffff;">
-                    <strong>Reveal Your Selection</strong>: If an opponent joins, you must reveal your choice using your
-                    private passphrase. If you do not reveal within 24 hours, the opponent can claim the total amount
-                    bet.</li>
-                <li class="list-group-item" style="background-color: #343a40; border: none; color: #ffffff;">
-                    <strong>Claim or Close the Game</strong>:
-                    <ul class="list-group" style="padding-left: 20px;">
-                        <li class="list-group-item" style="background-color: #343a40; border: none; color: #ffffff;">If
-                            the first player does not reveal their selection within 24 hours, the second player can
-                            claim the bet.</li>
-                        <li class="list-group-item" style="background-color: #343a40; border: none; color: #ffffff;">If
-                            no opponent joins within 24 hours, the first player can close the game and withdraw their
-                            bet.</li>
-                    </ul>
-                </li>
-            </ol>
-        </section>
+        </div>
     </main>
-    <footer class="text-center mt-4">
-        <p>Powered by <a href="https://www.coinset.org/" target="_blank">CoinSet</a></p>
+    
+    <footer class="text-center py-4 text-muted">
+        <p class="mb-0">
+            Powered by 
+            <a href="https://www.coinset.org/" target="_blank" class="text-success text-decoration-none">
+                CoinSet <i class="fas fa-external-link-alt ms-1"></i>
+            </a>
+        </p>
     </footer>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js";

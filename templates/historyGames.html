@@ -29,10 +29,10 @@
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                         <li class="nav-item ">
-                            <a class="nav-link" href="/openGames">Active Games</a>
+                            <a class="nav-link" href="/openGames">Open Games</a>
                         </li>
                         <li class="nav-item ">
-                            <a class="nav-link" href="/historyGames">History Games</a>
+                            <a class="nav-link" href="/historyGames">Completed Games</a>
                         </li>
                         <li class="nav-item ">
                             <a class="nav-link" href="/leaderboard">Leaderboard</a>
@@ -66,12 +66,39 @@
         </nav>
 
     </header>
-    <main class="container mt-4">
-        <section id="inicio" class="text-center">
-            <h5>History Games</h5>
-        </section>
-        <div  class="mt-5">
-            <div id="gameList" class="row">
+    <main class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-12">
+                <div class="bg-dark text-white shadow-lg mx-auto p-4" style="background: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.2) 100%); max-width: 1300px;">
+                <h2 class="text-center text-success mb-4"> Completed Games</h2>
+                    <!-- Games History Table -->
+                    <div class="card bg-dark h-100" style="width: 100%;">
+                        <div class="card-header bg-transparent border-bottom border-success text-center">
+                            <h5 class="text-success mb-0">
+                                <i class="fas fa-history me-2"></i>Games
+                            </h5>
+                        </div>
+                        <div class="card-body px-0">
+                            <div class="table-responsive">
+                                <table class="table table-dark table-hover">
+                                    <thead>
+                                        <tr class="text-success">
+                                            <th class="text-center">Date</th>
+                                            <th class="text-center">Moves</th>
+                                            <th class="text-center">Player 1</th>
+                                            <th class="text-center">Player 2</th>
+                                            <th class="text-center">Status</th>
+                                            <th class="text-center">Amount</th>
+                                            <th class="text-center">Game Details</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="Games">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </main>

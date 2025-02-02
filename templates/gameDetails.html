@@ -9,8 +9,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/7.0.0/mdb.dark.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <link rel="stylesheet" href="/static/css/styles.css">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism.min.css" rel="stylesheet" />
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism-dark.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism-tomorrow.min.css" rel="stylesheet">
 
 
 </head>
@@ -30,10 +31,10 @@
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                         <li class="nav-item ">
-                            <a class="nav-link" href="/openGames">Active Games</a>
+                            <a class="nav-link" href="/openGames">Open Games</a>
                         </li>
                         <li class="nav-item ">
-                            <a class="nav-link" href="/historyGames">History Games</a>
+                            <a class="nav-link" href="/historyGames">Completed Games</a>
                         </li>
                         <li class="nav-item ">
                             <a class="nav-link" href="/leaderboard">Leaderboard</a>
@@ -42,7 +43,9 @@
                             <a class="nav-link" href="https://github.com/jjldv/ChiaRPSGame" target="_blank">Git</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="https://mintgarden.io/collections/amlitoverse-col1aspdzsk7hulkem4xqylpr5c3yufnuts95svlqxqnm9qfzwfpy8wq5drdca" target="_blank">AmlitoVerse NFT</a>
+                            <a class="nav-link"
+                                href="https://mintgarden.io/collections/amlitoverse-col1aspdzsk7hulkem4xqylpr5c3yufnuts95svlqxqnm9qfzwfpy8wq5drdca"
+                                target="_blank">AmlitoVerse NFT</a>
                         </li>
                         <li class="nav-item">
                             <span class="nav-link" id="nodeStatus"></span>
@@ -52,14 +55,14 @@
                 <div class="dropdown">
                     <a data-mdb-dropdown-init class="dropdown-toggle d-flex align-items-center hidden-arrow" href="#"
                         id="navbarDropdownMenuAvatar" role="button" aria-expanded="false">
-                        <img src="/static/images/ProfilePictureNotLoged.jpg" id="ProfilePicture" class="rounded-circle" height="25"
-                             loading="lazy" />
+                        <img src="/static/images/ProfilePictureNotLoged.jpg" id="ProfilePicture" class="rounded-circle"
+                            height="25" loading="lazy" />
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownMenuAvatar" id="UserUI">
                         <li>
-                            <a class="dropdown-item"  >Login</a>
+                            <a class="dropdown-item">Login</a>
                         </li>
-                       
+
                     </ul>
                 </div>
 
@@ -67,181 +70,240 @@
         </nav>
 
     </header>
-    <main class="container mt-4" style="margin-top: 10px !important;">
-        <div class="container my-5" style="margin-top: -6px !important;">
-            <div class="row">
-                <div class="col-md-8">
-                    <div class="wallet-container text-center wallet-info">
-                        <img src="/static/images/OpenGameThumbnail.jpg" class="img-fluid" alt="Open Game" style="width: 100px;">
-                        <p></p>
-                        <div class="wallet-balance  ">
-                            <h2><p id="coinAmount">----</p></h2>
-                        </div>
-                        <div class="openGame-info">
-                            <p class="text-center" style="margin-bottom: 0px;">Status</p>
-                            <p style="text-align: center; overflow-x: auto; margin-top: -6px !important;" id="gameStatus">----</p>
-                            <p class="text-center" style="margin-bottom: 0px;">Coin Date</p>
-                            <p style="text-align: center; overflow-x: auto; margin-top: -6px !important;" id="coinDate">----</p>
-                            <p class="text-center" style="margin-bottom: 0px;">Game Coins</p>
-                            <p style="text-align: center; overflow-x: auto; margin-top: -6px !important;" id="gameCoins">----</p>
-                            <p class="text-center" style="margin-bottom: 0px;">Coin Status</p>
-                            <p style="text-align: center; overflow-x: auto; margin-top: -6px !important;" id="coinStatus">----</p>
-                            <p class="text-center" style="margin-bottom: 0px;">Coin Game Stage</p>
-                            <p style="text-align: center; overflow-x: auto; margin-top: -6px !important;" id="coinStage">----</p>
-                            <p class="text-center" style="margin-bottom: 0px;">Coin ID</p>
-                            <p style="text-align: center; overflow-x: auto; margin-top: -6px !important;" id="coinID">----</p>
-                            <p class="text-center" style="margin-bottom: 0px;">Player 1:</p>
-                            <p style="text-align: center; overflow-x: auto; margin-top: -6px !important; font-size: 11px;" id="publicKeyPlayer1">----</p>
-                            <p class="text-center" style="margin-bottom: 0px;">Compromise P1:</p>
-                            <p style="text-align: center; overflow-x: auto; margin-top: -6px !important; font-size: 11px;" id="compromisePlayer1">----</p>
-                            <p class="text-center" style="margin-bottom: 0px;">Player 2:</p>
-                            <p style="text-align: center; overflow-x: auto; margin-top: -6px !important; font-size: 11px;" id="publicKeyPlayer2">----</p>
-                            <p class="text-center" style="margin-bottom: 0px;">Hidden selection P2:</p>
-                            <p style="text-align: center; overflow-x: auto; margin-top: -6px !important; font-size: 11px;" id="selectionPlayer2">----</p>
-                            <p style="margin-bottom: 0px;">Game Puzzle Hash:</p>
-                            <p id="gamePuzzleHash" style="overflow-x: auto;margin-top: -6px !important;">----</p>
-                        </div>
-                    </div>
-                    <br>
-                    <div id="ClaimGameContainer" style="text-align: center; border-style: solid; padding: 10px; display: none;">
-                        <h3>Claim Game when Player 1 did not reveal in 24 hours</h3>
-                        <div class="col-md-12">
-                            <div class="form-group">
-                                <label for="feeSelector">Network Fee (deducted from the game amount)</label>
-                                <div id="feeClaimSelectorContainer"></div>
-                                <input type="number" class="form-control" id="feeSpendbundleClaim" value="0" min="0.000000000001" step="0.000000000001" style="display: none;">
-
-                            </div>
-
-                        </div>
-                        <br>
-                        <button  class="btn btn-primary btn-lg" onclick="claimGame()">
-                            <i class="fas fa-money-bill"></i> Claim Game
-                        </button>
-                    </div>
-                    <div id="CloseGameContainer" style="text-align: center; border-style: solid; padding: 10px; display: none;">
-                        <h3>Close Game</h3>
-                        <div class="col-md-12">
-                            <div class="form-group">
-                                <label for="feeSelector">Network Fee (deducted from the bet amount)</label>
-                                <div id="feeSelectorContainer"></div>
-                                <input type="number" class="form-control" id="feeSpendbundle" value="0" min="0.000000000001" step="0.000000000001" style="display: none;">
-
-                            </div>
-                        </div>
-                        <br>
-                        <button  class="btn btn-primary btn-lg" onclick="closeGame()">
-                            <i class="fas fa-money-bill"></i> Close Game
-                        </button>
-                    </div>
-                    <div id="JoinGameContainer" style="text-align: center; border-style: solid; padding: 10px; display: none;">
-                        <h3 class="text-center mb-3">Join Game</h3>
-                        <i class="fas fa-wallet fa-3x mb-3"></i>
-                        <h3 class="walletBalance">----</h3>
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="betAmount">Bet Amount</label>
-                                    <h3><p class="coinAmount">----</p></h3>
+    <main class="container py-5 d-flex justify-content-center">
+        <div class="col-xxl-12 col-xl-12 col-lg-11">
+            <div class="bg-dark text-white shadow-lg mx-auto"
+                style="background: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.2) 100%); max-width: 1300px;">
+                <div class="card-body p-5 w-100">
+                    <div class="d-flex flex-column" style="min-height: 800px;">
+                        <div class="game-arena mb-5" style="flex: 4">
+                            <div style="text-align: center;" >
+                                <div style="color: white;">CoinID</div>
+                                <div class="d-flex align-items-center justify-content-center" >
+                                    <span id="coinID" class="truncate public-key" title="Click to copy" style="color: #00ff00;">----</span>
+                                    <i class="fas fa-copy copy-icon" onclick="Utils.copyToClipboard('#coinID')"></i>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-center">
+                                    <span id="coinDate" class="truncate public-key" style="color: #00ff00;">----</span>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-center">
+                                    <span id="coinStatus" class="truncate public-key" style="color: #00ff00;">----</span>
                                 </div>
                             </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="feeSelector">Network Fee</label>
-                                    <div id="feeSelectorContainerJoin"></div>
-                                    <input type="number" class="form-control" id="feeSpendbundleJoin" value="0" min="0.000000000001" step="0.000000000001" style="display: none;">
+                            <div class="d-flex flex-column flex-md-row justify-content-center align-items-center gap-5 py-5">
+                                <div class="player-container text-center">
+                                    <div class="game-circle bg-darker mx-auto mb-4" style="width: 200px; height: 200px; position: relative;">
+                                        <div class="d-flex align-items-center justify-content-center h-100">
+                                            <span style="font-size: 6rem; color: #ff4444;" id="selectionPlayer1"></span>
+                                        </div>
+                                        <div id="winnerIconP1" style="position: absolute; top: 0; left: 50%; transform: translate(-50%, -50%); font-size: 2rem;"></div>
+                                    </div>
+                                    <h4 class="player-name" id="Player1" style="word-wrap: break-word;"></h4>
                                 </div>
-                            </div>
-                            <div class="mt-2" id="balanceValidationMessage"></div>
-                        </div>
-                        
-                        <div class="form-group mb-3">
-                            <label style="text-align: center;width: 100%;">Your Selection:</label>
-                            <div class="rps-selection">
-                                <div class="rps-option" onclick="selectOption(1, this)" id="rock-option" data-value="1">
-                                    <span class="rps-icon">🪨</span>
-                                    <span class="rps-label">Rock</span>
+                                <div class="d-flex flex-column align-items-center gap-4">
+                                    <h2 class="vs-text mb-0"
+                                        style="font-size: 4rem; color: #00ff00; text-shadow: 0 0 10px rgba(0,255,0,0.5);">
+                                        VS
+                                    </h2>
+                                    <div class="amount-badge py-3 px-4 rounded-pill"
+                                        style="background: rgba(30, 255, 0, 0.234); border: 1px solid rgba(13, 255, 0, 0.3);">
+                                        <span style="font-size: 1.5rem; color: #00ff00;" id="coinAmount">
+                                        </span>
+                                    </div>
                                 </div>
-                                <div class="rps-option" onclick="selectOption(2, this)" id="paper-option" data-value="2">
-                                    <span class="rps-icon">📄</span>
-                                    <span class="rps-label">Paper</span>
-                                </div>
-                                <div class="rps-option" onclick="selectOption(3, this)" id="scissors-option" data-value="3">
-                                    <span class="rps-icon">✂️</span>
-                                    <span class="rps-label">Scissors</span>
+                                <div class="player-container text-center">
+                                    <div class="game-circle bg-darker mx-auto mb-4" style="width: 200px; height: 200px; position: relative;">
+                                        <div class="d-flex align-items-center justify-content-center h-100">
+                                            <span style="font-size: 6rem;" id="selectionPlayer2"></span>
+                                        </div>
+                                        <div id="winnerIconP2" style="position: absolute; top: 0; left: 50%; transform: translate(-50%, -50%); font-size: 2rem;"></div>
+                                    </div>
+                                    <h4 class="player-name" id="Player2" style="word-wrap: break-word;"></h4>
                                 </div>
                             </div>
                         </div>
-                        <button class="btn btn-primary btn-lg w-100" onclick="joinPlayer2()">
-                            <i class="fas fa-play-circle"></i> Join Game
-                        </button>
-                    </div>
-                    
-                    <div id="RevealGameContainer" style="text-align: center; border-style: solid; padding: 10px; display: none;">
-                        <h3 class="text-center mb-3">Reveal your selection</h3>
-                        <div class="form-group mb-3" id="jsonFileContainer" style="display: none;">
-                            <label for="jsonFile">Select your JSON file:</label>
-                            <div class="d-flex align-items-center justify-content-center">
-                                <span id="jsonFileName" class="truncate wallet-address" title="Click to copy" style="font-size: 10px;">----</span>
-                                <i class="fas fa-copy copy-icon" onclick="Utils.copyToClipboard('#jsonFileName')"></i>
-                            </div>
-                            <input type="file" class="form-control" id="jsonFile" accept=".json" onchange="handleFileUploadReveal(event)">
-                        </div>
-                        <div class="form-group mb-3">
-                            <label style="text-align: center;width: 100%;">Your Selection:</label>
-                            <div class="rps-selection">
-                                <div class="rps-option-reveal" onclick="selectOptionReveal(1, this)" id="rock-option-reveal" data-value="1">
-                                    <span class="rps-icon">🪨</span>
-                                    <span class="rps-label">Rock</span>
-                                </div>
-                                <div class="rps-option-reveal" onclick="selectOptionReveal(2, this)" id="paper-option-reveal" data-value="2">
-                                    <span class="rps-icon">📄</span>
-                                    <span class="rps-label">Paper</span>
-                                </div>
-                                <div class="rps-option-reveal" onclick="selectOptionReveal(3, this)" id="scissors-option-reveal" data-value="3">
-                                    <span class="rps-icon">✂️</span>
-                                    <span class="rps-label">Scissors</span>
+                        <div class="game-status mb-5" style="flex: 2">
+                            <div class="alert mx-auto text-center py-4"
+                                style="max-width: 500px; background: rgba(30, 255, 0, 0.234); border: 1px solid rgba(13, 255, 0, 0.3);">
+                                <div class="d-flex align-items-center justify-content-center">
+                                    <span style="font-size: 1.25rem; color: #00ff00;" id="gameStatusDescription">
+                                        ----
+                                    </span>
+                                    <div class="spinner-border text-success ms-2" role="status" style="width: 1.5rem; height: 1.5rem;display: none;" id="spinnerPendingTransaction"  >
+                                        <span class="visually-hidden" >Loading...</span>
+                                    </div>
                                 </div>
                             </div>
-                            <input type="hidden" id="selectedOptionReveal" name="selectedOptionReveal">
                         </div>
-                        <div class="form-group mb-3">
-                            <label for="secretKey">Secret Key:</label>
-                            <input type="text" class="form-control" id="keyRPS" placeholder="Enter your secret key">
+                        <div class="game-progress mb-5" style="flex: 2">
+                            <div class="d-flex justify-content-center" id="gameCoins">
+                            </div>
                         </div>
-                        <div class="form-group mb-3">
-                        <h5 class="text-center mb-3" id="selectionRPSHashReveal"></h5>
+                        <div class="game-actions text-center" style="flex: 1" id="gameOption">
+                            <div id="ClaimGameContainer" style="text-align: center; border-style: solid; padding: 10px; display: none;">
+                                <h3>Claim Game when Player 1 did not reveal in 24 hours</h3>
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label for="feeSelector">Network Fee (deducted from the game amount)</label>
+                                        <div id="feeClaimSelectorContainer"></div>
+                                        <input type="number" class="form-control" id="feeSpendbundleClaim" value="0" min="0.000000000001" step="0.000000000001" style="display: none;">
+        
+                                    </div>
+        
+                                </div>
+                                <br>
+                                <button  class="btn btn-primary btn-lg" onclick="claimGame()">
+                                    <i class="fas fa-money-bill"></i> Claim Game
+                                </button>
+                            </div>
+                            <div id="CloseGameContainer" style="text-align: center; border-style: solid; padding: 10px; display: none;">
+                                <h3>Close Game</h3>
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label for="feeSelector">Network Fee (deducted from the bet amount)</label>
+                                        <div id="feeSelectorContainer"></div>
+                                        <input type="number" class="form-control" id="feeSpendbundle" value="0" min="0.000000000001" step="0.000000000001" style="display: none;">
+        
+                                    </div>
+                                </div>
+                                <br>
+                                <button  class="btn btn-primary btn-lg" onclick="closeGame()">
+                                    <i class="fas fa-money-bill"></i> Close Game
+                                </button>
+                            </div>
+                            <div id="JoinGameContainer" style="text-align: center; border-style: solid; padding: 10px; display: none;">
+                                <h3 class="text-center mb-3">Join Game</h3>
+                                <i class="fas fa-wallet fa-3x mb-3"></i>
+                                <h3 class="walletBalance">----</h3>
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="betAmount">Bet Amount</label>
+                                            <h3><p class="coinAmount">----</p></h3>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="feeSelector">Network Fee</label>
+                                            <div id="feeSelectorContainerJoin"></div>
+                                            <input type="number" class="form-control" id="feeSpendbundleJoin" value="0" min="0.000000000001" step="0.000000000001" style="display: none;">
+                                        </div>
+                                    </div>
+                                    <div class="mt-2" id="balanceValidationMessage"></div>
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    <label style="text-align: center;width: 100%;">Your Selection:</label>
+                                    <div class="rps-selection">
+                                        <div class="rps-option" onclick="selectOption(1, this)" id="rock-option" data-value="1">
+                                            <span class="rps-icon">🪨</span>
+                                            <span class="rps-label">Rock</span>
+                                        </div>
+                                        <div class="rps-option" onclick="selectOption(2, this)" id="paper-option" data-value="2">
+                                            <span class="rps-icon">📄</span>
+                                            <span class="rps-label">Paper</span>
+                                        </div>
+                                        <div class="rps-option" onclick="selectOption(3, this)" id="scissors-option" data-value="3">
+                                            <span class="rps-icon">✂️</span>
+                                            <span class="rps-label">Scissors</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button class="btn btn-primary btn-lg w-100" onclick="joinPlayer2()">
+                                    <i class="fas fa-play-circle"></i> Join Game
+                                </button>
+                            </div>
+                            
+                            <div id="RevealGameContainer" style="text-align: center; border-style: solid; padding: 10px; display: none;">
+                                <h3 class="text-center mb-3">Reveal your selection</h3>
+                                <div class="form-group mb-3" id="jsonFileContainer" style="display: none;">
+                                    <label for="jsonFile">Select your JSON file:</label>
+                                    <div class="d-flex align-items-center justify-content-center">
+                                        <span id="jsonFileName" class="truncate wallet-address" title="Click to copy" style="font-size: 10px;">----</span>
+                                        <i class="fas fa-copy copy-icon" onclick="Utils.copyToClipboard('#jsonFileName')"></i>
+                                    </div>
+                                    <input type="file" class="form-control" id="jsonFile" accept=".json" onchange="handleFileUploadReveal(event)">
+                                </div>
+                                <div class="form-group mb-3">
+                                    <label style="text-align: center;width: 100%;">Your Selection:</label>
+                                    <div class="rps-selection">
+                                        <div class="rps-option-reveal" onclick="selectOptionReveal(1, this)" id="rock-option-reveal" data-value="1">
+                                            <span class="rps-icon">🪨</span>
+                                            <span class="rps-label">Rock</span>
+                                        </div>
+                                        <div class="rps-option-reveal" onclick="selectOptionReveal(2, this)" id="paper-option-reveal" data-value="2">
+                                            <span class="rps-icon">📄</span>
+                                            <span class="rps-label">Paper</span>
+                                        </div>
+                                        <div class="rps-option-reveal" onclick="selectOptionReveal(3, this)" id="scissors-option-reveal" data-value="3">
+                                            <span class="rps-icon">✂️</span>
+                                            <span class="rps-label">Scissors</span>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" id="selectedOptionReveal" name="selectedOptionReveal">
+                                </div>
+                                <div class="form-group mb-3">
+                                    <label for="secretKey">Secret Key:</label>
+                                    <input type="text" class="form-control" id="keyRPS" placeholder="Enter your secret key">
+                                </div>
+                                <div class="form-group mb-3">
+                                <h5 class="text-center mb-3" id="selectionRPSHashReveal"></h5>
+                                </div>
+                                <button class="btn btn-primary btn-lg w-100" onclick="revealSelectionPlayer1()">
+                                    <i class="fas fa-play-circle"></i> Reveal
+                                </button>
+                            </div>
                         </div>
-                        <button class="btn btn-primary btn-lg w-100" onclick="revealSelectionPlayer1()">
-                            <i class="fas fa-play-circle"></i> Reveal
-                        </button>
-                    </div>
-                    <div class="form-group" style="position: relative;">
-                        <h5 style="text-align: center;">Pending Transactions</h5>
-                        <div class="row" id="pendingTransactions">
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="game-info">
-                        <p style="text-align: center;">Game Puzzle Reveal:</p>
-                        <p>
-                            <textarea style="min-height: 200px;" id="gamePuzzleReveal" class="form-control">----</textarea>
-                        </p>
-                        <p style="text-align: center;">Game Puzzle Reveal Disassembled:</p>
-                        <p>
-                            <textarea style="min-height: 200px;" id="gamePuzzleRevealDisassembled" class="form-control">----</textarea>
-                        </p>
+                        <button class="btn btn-secondary btn-lg px-5 mt-3" data-mdb-toggle="modal" data-mdb-target="#smartContractModal">
+                            See SmartContract
+                        </button>                                                                   
                     </div>
                 </div>
             </div>
         </div>
     </main>
+    <div class="modal fade" id="smartContractModal" tabindex="-1" aria-labelledby="smartContractLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable modal-xl w-100" style="max-width: 100vw;">
+            <div class="modal-content bg-dark text-white" style="max-height: 90vh; overflow-y: auto;">
+                <div class="modal-body">
+                    <!-- Tabs -->
+                    <ul class="nav nav-tabs mb-3" id="modalTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link active" id="tab-human-readable" data-mdb-tab-init href="#tab-content-human" role="tab" aria-controls="tab-content-human" aria-selected="true">Human Readable</a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" id="tab-puzzle-reveal" data-mdb-tab-init href="#tab-content-puzzle" role="tab" aria-controls="tab-content-puzzle" aria-selected="false">Puzzle Reveal</a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" id="tab-puzzle-disassembled" data-mdb-tab-init href="#tab-content-disassembled" role="tab" aria-controls="tab-content-disassembled" aria-selected="false">Puzzle Reveal Disassembled</a>
+                        </li>
+                    </ul>
+    
+                    <!-- Tab Content -->
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="tab-content-human" role="tabpanel">
+                            <pre class="bg-black text-white p-3 rounded" style="max-height: 70vh; overflow-y: auto;"><code class="language-lisp" id="contractCode"></code></pre>
+                        </div>
+                        <div class="tab-pane fade" id="tab-content-puzzle" role="tabpanel">
+                            <pre class="bg-black text-white p-3 rounded" style="max-height: 70vh; overflow-y: auto;"><code class="language-lisp" id="puzzleReveal"></code></pre>
+                        </div>
+                        <div class="tab-pane fade" id="tab-content-disassembled" role="tabpanel">
+                            <pre class="bg-black text-white p-3 rounded" style="max-height: 70vh; overflow-y: auto;"><code class="language-lisp" id="puzzleDisassembled"></code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js";
-        import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-messaging.js";
-        window.firebaseModules = { initializeApp, getMessaging, getToken };
+        import {initializeApp} from "https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js";
+        import {getMessaging, getToken} from "https://www.gstatic.com/firebasejs/11.2.0/firebase-messaging.js";
+        window.firebaseModules = {initializeApp, getMessaging, getToken};
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-lisp.min.js"></script>
     <script src="/static/js/libs/qrcode.min.js"></script>
     <script src="/static/js/libs/greenweb.js"></script>
     <script src="/static/js/Firebase.js"></script>
@@ -257,6 +319,20 @@
     <script src="/static/js/Session.js"></script>
     <script src="/static/js/FeeSelector.js"></script>
     <script src="/static/js/gameDetails.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+        const modalElement = document.getElementById("smartContractModal");
+        const modalInstance = new mdb.Modal(modalElement);
+        const tabs = document.querySelectorAll('[data-mdb-tab-init]');
+        tabs.forEach(tab => new mdb.Tab(tab));
+        document.querySelector('[data-mdb-target="#smartContractModal"]').addEventListener("click", function() {
+            modalInstance.show();
+        });
+
+    
+    });
+
+    </script>
 </body>
 
 </html>

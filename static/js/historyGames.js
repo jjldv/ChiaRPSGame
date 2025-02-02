@@ -1,48 +1,74 @@
 let UserSession = new Session();
+const PUBKEY = Utils.getPublicKeyFromUrl();
+if (!PUBKEY) {
+    window.location.replace("/");
+}
 IS_MAINNET = null;
 document.addEventListener("DOMContentLoaded", async function () {
     const netWorkInfo = await Utils.fetch("/getNetworkInfo");
     IS_MAINNET = netWorkInfo.success && netWorkInfo.network_name === "mainnet";
     getHistoryGames();
-    
 });
 async function getHistoryGames() {
-    const RopenGames = await Utils.getHistoryGames( true);
-    gameList.innerHTML = "";
-    if (RopenGames.success){
-        for (let i = 0; i < RopenGames.historyGames.length; i++) {
-            const openGame = RopenGames.historyGames[i];
-            const date = new Date(openGame.timestamp * 1000);
-            const formattedDate = date.toLocaleString();
-            const player1Name = openGame.namePlayer1.length > 15 ? openGame.namePlayer1.substring(0, 15) + "..." : openGame.namePlayer1;
-            const player2Name = openGame.namePlayer2.length > 15 ? openGame.namePlayer2.substring(0, 15) + "..." : openGame.namePlayer2;
-            const row = `<div class="col-md-4">
-            <div class="card mb-4 shadow-sm">
-                <img src="/static/images/OpenGameThumbnail.jpg" class="card-img-top" alt="Placeholder Image">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="my-0 font-weight-normal" title="Coin Id:${openGame.coinId}">${openGame.coinId.substring(0, 15)}...</h4>
-                </div>
-                <div class="card-body">
-                    <h1 class="card-title pricing-card-title" style="color:white;text-align:center;">${Utils.formatMojosPrefix(openGame.gameAmount,IS_MAINNET)}</h1>
-                    <div class="mb-2">
-                        <p style="color:white;text-align:center;margin:0px;">${player1Name}</p>
-                        <p style="color:white;text-align:center;margin:0px;">vs </p>
-                        <p style="color:white;text-align:center;margin:0px;">${player2Name}</p>
-                        <p style="color:white;text-align:center;margin:0px;">Status</p>
-                        <p style="color:white;text-align:center;margin:0px;">${openGame.gameStatusDescription}</p>
-                        <p style="color:white;text-align:center;margin:0px;">${formattedDate}</p>
+    const RGames = await Utils.getHistoryGames(true);
+    if (RGames.success) {
+        const gamesBody = document.getElementById('Games');
+        gamesBody.innerHTML = '';
+        
+        RGames.historyGames.forEach(game => {
+            const row = document.createElement('tr');
+            
+          
+ 
+            const resultClass = {
+                'REVEALED': 'bg-success', 
+                'CLAIMED': 'bg-danger',
+                'UNSPENT': 'bg-info'
+            }[game.status] || 'bg-info';
+ 
+            // Determinar nombres para mostrar
+            const player1Display = game.namePlayer1 === game.publicKeyPlayer1 ? "Anonymous" : game.namePlayer1;
+            const player2Display = game.namePlayer2 === game.publicKeyPlayer2 ? "Anonymous" : game.namePlayer2;
+            const player1Trophy = game.publicKeyWinner === game.publicKeyPlayer1 ? '🏆' : '';
+            const player2Trophy = game.publicKeyWinner === game.publicKeyPlayer2 ? '🏆' : '';
+            row.innerHTML = `
+                <td class="text-center">${game.date}</td>
+                <td class="text-center">
+                    <div class="d-flex justify-content-center gap-2">
+                        <span>${game.player1_emoji || '❓'}</span>
+                        <span class="text-muted">vs</span>
+                        <span>${game.player2_emoji || '❓'}</span>
                     </div>
-                    <a href="/gameDetails/${openGame.coinId}">
-                        <button type="button" class="btn btn-lg btn-block btn-outline-primary">Details</button>
+                </td>
+                <td class="text-center">
+                   <a href="/userProfile/${game.publicKeyPlayer1}" class="text-decoration-none">
+                       ${player1Display}${player1Trophy}
+                   </a>
+               </td>
+               <td class="text-center">
+                   ${game.publicKeyPlayer2 ? 
+                       `<a href="/userProfile/${game.publicKeyPlayer2}" class="text-decoration-none">
+                           ${player2Display}${player2Trophy}
+                       </a>` 
+                       : '-'}
+               </td>
+                <td class="text-center">
+                    <span class="badge ${resultClass}">
+                        ${game.status}
+                    </span>
+                </td>
+                <td class="text-center">${Utils.formatMojosPrefix(game.amount, IS_MAINNET)}</td>
+                <td class="text-center">
+                    <a href="/gameDetails/${game.coinId}" class="text-decoration-none">
+                        <span class="d-inline-flex align-items-center">
+                            ${game.gameStatusDescription}
+                        </span>
                     </a>
-                </div>
-            </div>
-        </div>`;
-            gameList.innerHTML += row;
-        }
+                </td>
+            `;
+            gamesBody.appendChild(row);
+        });
     }
-}
-
-
+ }
 
 

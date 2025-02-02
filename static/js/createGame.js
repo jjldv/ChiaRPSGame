@@ -255,6 +255,7 @@ async function validateBalance() {
 }
 async function joinPlayer1FromGoby(toGameWalletAddress,betAmount,fee,selectionHash,cashOutAddressHash) {
     try {
+        Utils.showSpinner("Connecting to Goby...");
         const totalRequired = BigInt(betAmount) + BigInt(fee);
         console.log("Total required:", totalRequired.toString());
         let gameWalletPuzzleHash = gameWalletInfo.wallet_puzzle_hash;
@@ -326,6 +327,7 @@ async function joinPlayer1FromGoby(toGameWalletAddress,betAmount,fee,selectionHa
         // let GobyTx = await UserSession.Goby.sendTransaction(spendBundle);
         // console.log("GobyTx:", GobyTx);
         let ServerTx = await UserSession.pushTx(spendBundle);
+        Utils.hideSpinner();
         console.log("ServerTx:", ServerTx);
         if (!ServerTx.success) {
             Utils.displayToast("Error sending transaction");
@@ -333,15 +335,15 @@ async function joinPlayer1FromGoby(toGameWalletAddress,betAmount,fee,selectionHa
         }
         Utils.displayToast("Transaction sent successfully, saving your selection data in json file...");
         saveSelectionData();
+        
         keyRPS.value = "";
         selectionRPSHash.value = "";
         feeSpendbundle.value = "0";
         document.getElementById("betAmount").value = "";
-
-        let GobyCoinId = gobySmartCoin.getName();
         setPendingTransaction(gameCoinId);
         return true;
     } catch (error) {
+        Utils.hideSpinner();
         console.error("Error in joinPlayer1FromGoby:", error);
         return false;
     }
@@ -371,7 +373,6 @@ async function setPendingTransaction(coinId) {
                         <h6 class="card-title mb-2 text-white">Pending Transaction</h6>
                         <div class="transaction-details text-white">
                         <p class="mb-1"><strong>Amount:</strong> ${Utils.formatMojosPrefix(coinAmount, IS_MAINNET)}</p>
-                        <p class="mb-1"><strong>Fee:</strong> ${Utils.formatMojos(transaction.fee)}</p>
                         <p class="mb-1"><strong>Action:</strong> ${Response.action}</p>
                         </div>
                     </div>
@@ -395,8 +396,8 @@ async function setPendingTransaction(coinId) {
                     <i class="fas fa-check-circle text-success fa-2x"></i>
                     <div class="flex-grow-1">
                         <h6 class="card-title mb-2 text-white">Game Created Successfully!</h6>
-                        <a href="/gameDetails/${coinId}" target="_blank" class="btn btn-primary btn-sm">
-                        <i class="fas fa-gamepad me-2"></i>View Game
+                        <a href="/userOpenGames/${UserSession.pubkey}" target="_blank" class="btn btn-primary btn-sm">
+                        <i class="fas fa-gamepad me-2"></i>View Open Games
                         </a>
                     </div>
                     </div>

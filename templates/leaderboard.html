@@ -48,10 +48,10 @@
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                         <li class="nav-item ">
-                            <a class="nav-link" href="/openGames">Active Games</a>
+                            <a class="nav-link" href="/openGames">Open Games</a>
                         </li>
                         <li class="nav-item ">
-                            <a class="nav-link" href="/historyGames">History Games</a>
+                            <a class="nav-link" href="/historyGames">Completed Games</a>
                         </li>
                         <li class="nav-item ">
                             <a class="nav-link" href="/leaderboard">Leaderboard</a>
@@ -85,37 +85,156 @@
         </nav>
 
     </header>
-    <main class="container mt-4">
-        <section id="inicio" class="text-center">
-            <h5>Leaderboard</h5>
-        </section>
-        <div class="mt-5">
-            <h2>Top Winners</h2>
-            <table style="width: 100%;" id="topWinnersTable">
-                <thead>
-                    <tr>
-                        <th>Player</th>
-                        <th>Wins</th>
-                    </tr>
-                </thead>
-                <tbody>
-                </tbody>
-            </table>
-            <br>
-            <br>
-            <h2>Top Earners</h2>
-            <table style="width: 100%;" id="topEarnersTable">
-                <thead>
-                    <tr>
-                        <th>Player</th>
-                        <th>Total Earned</th>
-                    </tr>
-                </thead>
-                <tbody>
-                </tbody>
-            </table>
+    <main class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-12">
+                <div class="bg-dark text-white shadow-lg mx-auto p-4" style="background: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.2) 100%); max-width: 1300px;">
+                    <!-- Dashboard Header -->
+                    <div class="text-center mb-5">
+                        <h2 class="display-4 text-success mb-2">Platform Statistics</h2>
+                        <p class="text-muted">Real-time statistics of Chia Rock Paper Scissors</p>
+                    </div>
+    
+                    <!-- Global Stats Cards -->
+                    <div class="row g-4 mb-5 justify-content-center">
+                        <div class="col-md-6 col-sm-6">
+                            <a href="/openGames">
+                                <div class="stat-card p-4 text-center">
+                                    <div class="d-flex justify-content-center mb-3">
+                                        <div class="stat-icon">
+                                            <i class="fas fa-gamepad"></i>
+                                        </div>
+                                    </div>
+                                    <h6 class="text-muted">Open Games</h6>
+                                    <h3 class="text-success" id="totalOpenGames">----</h3>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-6 col-sm-6">
+                            <div class="stat-card p-4 text-center">
+                                <a href="/historyGames">
+                                    <div class="d-flex justify-content-center mb-3">
+                                        <div class="stat-icon">
+                                            <i class="fas fa-gamepad"></i>
+                                        </div>
+                                    </div>
+                                    <h6 class="text-muted">Completed Games</h6>
+                                    <h3 class="text-success" id="totalClosedGames">----</h3>
+                                </a>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-6">
+                            <div class="stat-card p-4 text-center">
+                                <div class="d-flex justify-content-center mb-3">
+                                    <div class="stat-icon">
+                                        <i class="fas fa-users"></i>
+                                    </div>
+                                </div>
+                                <h6 class="text-muted">Total Players</h6>
+                                <h3 class="text-success" id="totalPlayers">----</h3>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-6">
+                            <div class="stat-card p-4 text-center">
+                                <div class="d-flex justify-content-center mb-3">
+                                    <div class="stat-icon">
+                                        <i class="fas fa-coins"></i>
+                                    </div>
+                                </div>
+                                <h6 class="text-muted">Total Played</h6>
+                                <h3 class="text-success" id="totalVolume">----</h3>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-6">
+                            <div class="stat-card p-4 text-center">
+                                <a href="#" id="biggestGameLink">
+                                    <div class="d-flex justify-content-center mb-3">
+                                        <div class="stat-icon">
+                                            <i class="fas fa-trophy"></i>
+                                        </div>
+                                    </div>
+                                    <h6 class="text-muted">Biggest Game</h6>
+                                    <h3 class="text-success" id="biggestGame">----</h3>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+    
+                    <!-- Rankings Section -->
+                    <div class="row g-4">
+                        <!-- Top Winners -->
+                        <div class="col-lg-12" style="width: 100%;">
+                            <div class="card bg-dark h-100" style="width: 100%;">
+                                <div class="card-header bg-transparent border-bottom border-success text-center">
+                                    <h5 class="text-success mb-0">
+                                        <i class="fas fa-crown me-2"></i>Top Winners
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-dark table-hover">
+                                            <thead>
+                                                <tr class="text-success">
+                                                    <th class="text-center">#</th>
+                                                    <th>Player</th>
+                                                    <th class="text-center">Wins</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="topWinners"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+    
+                        <!-- Top Earners -->
+                        <div class="col-lg-12" style="width: 100%;">
+                            <div class="card bg-dark h-100" style="width: 100%;">
+                                <div class="card-header bg-transparent border-bottom border-success text-center">
+                                    <h5 class="text-success mb-0">
+                                        <i class="fas fa-chart-line me-2"></i>Top Earners
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-dark table-hover">
+                                            <thead>
+                                                <tr class="text-success">
+                                                    <th class="text-center">#</th>
+                                                    <th>Player</th>
+                                                    <th class="text-center">Net Earnings</th>
+                                                    <th class="text-center">Games</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="topEarners"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+    
+                        <!-- Move Statistics -->
+                        <div class="col-lg-12" style="width: 100%;">
+                            <div class="card bg-dark h-100" style="width: 100%;">
+                                <div class="card-header bg-transparent border-bottom border-success text-center">
+                                    <h5 class="text-success mb-0">
+                                        <i class="fas fa-hand-rock me-2"></i>Winning Moves Statistics
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row justify-content-center" id="moveStats">
+                                        <!-- Will be populated by JS -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
+    
+ 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js";
         import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-messaging.js";

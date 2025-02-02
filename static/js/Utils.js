@@ -59,7 +59,7 @@ class Utils {
             return { success: false, message: "Error fetching data" , error: error};
         }
     }
-    static async fetch(endPoint, body,displaySpinner = false) {
+    static async fetch(endPoint, body,displaySpinner = false,signal = null) {
         try {
             if (displaySpinner) {
                 this.showSpinner();
@@ -69,6 +69,7 @@ class Utils {
                 headers: {
                     "Content-Type": "application/json",
                 },
+                signal: signal,
                 body: JSON.stringify(body),
             });
             if (displaySpinner) {
@@ -100,12 +101,28 @@ class Utils {
             return { success: false, message: "Error getting open games" };
         }
     }
+    static async getUserProfile(pubkey,showLoading = false) {
+        try {
+            const response = await Utils.fetch("/getUserProfile", { pubkey: pubkey },showLoading);
+            return response;
+        } catch (error) {
+            return { success: false, message: "Error getting user profile" };
+        }
+    }
     static async getUserHistoryGames(pubkey,showLoading = false) {
         try {
             const response = await Utils.fetch("/getUserHistoryGames", { pubkey: pubkey },showLoading);
             return response;
         } catch (error) {
             return { success: false, message: "Error getting history games" };
+        }
+    }
+    static async getGlobalStats(showLoading = false) {
+        try {
+            const response = await Utils.fetch("/getGlobalStats", {},showLoading);
+            return response;
+        } catch (error) {
+            return { success: false, message: "Error getting global stats" };
         }
     }
     static async getHistoryGames(showLoading = false) {
@@ -169,9 +186,9 @@ class Utils {
         let pubkey = urlObj.pathname.split('/').pop();
         return pubkey;
     }
-    static async getGameDetails(coinId,showSpinner = false) {
+    static async getGameDetails(coinId,showSpinner = false, signal = null) {
         try {
-            const response = await Utils.fetch("/getGameDetails", { coinId: coinId },showSpinner);
+            const response = await Utils.fetch("/getGameDetails", { coinId: coinId },showSpinner,signal);
             return response;
         } catch (error) {
             return { success: false, message: "Error getting game info" };

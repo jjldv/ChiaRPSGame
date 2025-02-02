@@ -4,6 +4,7 @@ let coinRecord;
 let IntervalTx = null;
 let GameAmount = 0;
 let selectedOption = null;
+let poolingGameDetailsController = null;
 //TODO: change name for LauncherGame to get the control of the games for the user
 let gameWalletInfo;
 let IntervalBalance = null;
@@ -20,21 +21,33 @@ UserSession.on("connected", async () => {
     
     if (gamedetail?.spentBlockIndex == 0 && gamedetail.stage == 3 && gamedetail.publicKeyPlayer2 ==  UserSession.pubkey?.replace("0x","")){
         ClaimGameContainer.style.display = "block";
+        CloseGameContainer.style.display = "none";
+        JoinGameContainer.style.display = "none";
+        RevealGameContainer.style.display = "none";
         setFeeClaimSelector();
         return;
     }
 
     if (gamedetail?.spentBlockIndex == 0 && gamedetail.stage == 2  && gamedetail.publicKeyPlayer1 == UserSession.pubkey?.replace("0x","") ){
         CloseGameContainer.style.display = "block";
+        JoinGameContainer.style.display = "none";
+        RevealGameContainer.style.display = "none";
+        ClaimGameContainer.style.display = "none";
         setFeeCloseSelector();
     }
     if (gamedetail?.spentBlockIndex == 0 && gamedetail.stage == 3 && UserSession.pubkey && UserSession.pubkey?.replace("0x","") == gamedetail.publicKeyPlayer1){
         RevealGameContainer.style.display = "block";
+        CloseGameContainer.style.display = "none";
+        JoinGameContainer.style.display = "none";
+        ClaimGameContainer.style.display = "none";
         setConfigReveal();
     }
 
     if (gamedetail?.spentBlockIndex == 0 && gamedetail.stage == 2 && UserSession.pubkey && UserSession.pubkey?.replace("0x","") != gamedetail.publicKeyPlayer1){
         JoinGameContainer.style.display = "block";
+        CloseGameContainer.style.display = "none";
+        RevealGameContainer.style.display = "none";
+        ClaimGameContainer.style.display = "none";
         const feeSelectorJoin = new FeeSelector(feeOptions, UserSession.prefix,"feeSelectorContainerJoin");
         feeSelectorJoin.on("change", (data) => {
             feeSpendbundleJoin.value = data.value;
@@ -55,7 +68,6 @@ document.addEventListener("DOMContentLoaded", async function () {
     const netWorkInfo = await Utils.fetch("/getNetworkInfo");
     IS_MAINNET = netWorkInfo.success && netWorkInfo.network_name === "mainnet";
     coinID.innerHTML = coinId;
-
     await getGameDetails(true);
     
 
@@ -79,25 +91,24 @@ async function checkCompromise(){
 async function updateReceiveAmount(){
     amountreceiveSpendbundle.innerHTML = Utils.formatMojos(coinRecord.coin.amount - Utils.XCHToMojos(parseFloat(feeSpendbundle.value)));
 }
-async function updateReceiveAmountClaim(){
-    amountreceiveSpendbundleClaim.innerHTML = Utils.formatMojos(coinRecord.coin.amount - Utils.XCHToMojos(parseFloat(feeSpendbundleClaim.value)));
-}
 
-async function getGameDetails(showSpinner = false){
-    const RgameInfo = await Utils.getGameDetails(coinId,showSpinner);
+
+async function getGameDetails(showSpinner = false,signal = null){
+    const RgameInfo = await Utils.getGameDetails(coinId,showSpinner,signal);
     if (!RgameInfo.success){
         return;
     }
-    checkPendingTransaction();
-    if ( RgameInfo.game.spentBlockIndex != 0){
-        clearInterval(IntervalTx);
-    }
-    if (RgameInfo.game.spentBlockIndex == 0 && IntervalTx == null){
-        IntervalTx = setInterval(() => {
-            getGameDetails();
-        }, 30000);
-    }
     window.gamedetail = RgameInfo.game;
+    if ( RgameInfo.game.spentBlockIndex != 0){
+        if (poolingGameDetailsController) {
+            poolingGameDetailsController.abort();
+            poolingGameDetailsController = null;
+        }
+    }
+    else if (RgameInfo.game.spentBlockIndex == 0 && !poolingGameDetailsController) {
+        startPoolingGameDetails();
+    }
+
     GameAmount = RgameInfo.game.gameAmount;
     const date = new Date(gamedetail.timestamp * 1000);
     const formattedDate = date.toLocaleString();
@@ -106,22 +117,44 @@ async function getGameDetails(showSpinner = false){
     document.querySelectorAll('.coinAmount').forEach(element => {
         element.innerHTML = Utils.formatMojosPrefix(GameAmount, IS_MAINNET);
     });
-    publicKeyPlayer1.innerHTML = `<a href="/userHistoryGames/${gamedetail.publicKeyPlayer1}">${gamedetail.namePlayer1}</a>`;
-    compromisePlayer1.innerHTML = gamedetail.compromisePlayer1;
-    publicKeyPlayer2.innerHTML = gamedetail.publicKeyPlayer2 !="----" ? `<a href="/userHistoryGames/${gamedetail.publicKeyPlayer2}">${gamedetail.namePlayer2}</a>` : gamedetail.namePlayer2;
+    Player1.innerHTML = `<a href="/userProfile/${gamedetail.publicKeyPlayer1}">${gamedetail.namePlayer1 == gamedetail.publicKeyPlayer1 ? "Player 1":gamedetail.namePlayer1}</a>`;
+    Player2.innerHTML = `<a href="${gamedetail.namePlayer2 == "----" || gamedetail.namePlayer2 ==""?"#":"/userProfile/"+gamedetail.publicKeyPlayer2}">${gamedetail.namePlayer2 =="----" || gamedetail.namePlayer2 =="" ? "----":gamedetail.namePlayer2 == gamedetail.publicKeyPlayer2 ? "Player 2":gamedetail.namePlayer2}</a>`;
+    selectionPlayer1.title = "Compromise : "+gamedetail.compromisePlayer1;
+    selectionPlayer1.innerHTML = gamedetail.emojiSelectionPlayer1;
     selectionPlayer2.innerHTML = gamedetail.emojiSelectionPlayer2;
-    gamePuzzleReveal.innerHTML = gamedetail.puzzleReveal;
-    gamePuzzleRevealDisassembled.innerHTML = gamedetail.puzzleRevealDisassembled;
-    gamePuzzleHash.innerHTML = gamedetail.puzzleHash;
+    
+    contractCode.textContent = RgameInfo.game.puzzleRevealFormatted;
+    puzzleReveal.textContent = RgameInfo.game.puzzleReveal;
+    puzzleDisassembled.textContent = RgameInfo.game.puzzleRevealDisassembled;
+    Prism.highlightAll();
+    coinAmount.title = "Game Puzzle Hash: "+gamedetail.puzzleHash;
     coinStatus.innerHTML = gamedetail.coinStatus;
-    coinStage.innerHTML = gamedetail.gameStatusDescription;
-    gameStatus.innerHTML = RgameInfo.gameCoins[RgameInfo.gameCoins.length - 1].gameStatusDescription;
+
+
+    document.getElementById('spinnerPendingTransaction').style.display = RgameInfo.pendingTransactions.isPending == 1 ? "block":"none";
+
+
+    gameStatusDescription.innerHTML = RgameInfo.pendingTransactions.isPending == 1 ? RgameInfo.pendingTransactions.action:RgameInfo.game.gameStatusDescription;
+    if(gamedetail.publicKeyWinner != "" && gamedetail.publicKeyWinner == gamedetail.publicKeyPlayer1)
+        winnerIconP1.innerHTML = "<i class='fas fa-trophy'></i>";
+    if(gamedetail.publicKeyWinner != "" &&  gamedetail.publicKeyWinner == gamedetail.publicKeyPlayer2)
+        winnerIconP2.innerHTML = "<i class='fas fa-trophy'></i>";
     let htmlContent = '';
     RgameInfo.gameCoins.forEach((coin, index) => {
-        htmlContent += `<a href="/gameDetails/${coin.coinId}">${coin.gameStatusDescription}</a><br>`;
+        if (index === RgameInfo.gameCoins.length - 1) {
+            return;
+        }
+        htmlContent += `<div class="progress-step text-center d-flex flex-column align-items-center mx-4">
+        <div class="progress-circle bg-${coin.coinStatus == "SPENT" ? "success":"warning"} mb-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+            <i class="fas fa-${coin.coinStatus == "SPENT" ? "check":"clock"} fa-lg"></i>
+        </div>
+        <div class="text-white-50 text-center" style="max-width: 120px; overflow-wrap: break-word; white-space: normal; line-height: 1.4;">
+            ${coin.gameStatusDescription}
+        </div>
+    </div>`;
     });
     gameCoins.innerHTML = htmlContent
-    if(gamedetail.spentBlockIndex != 0){
+    if(gamedetail.spentBlockIndex != 0 || RgameInfo.pendingTransactions.isPending == 1){
         CloseGameContainer.style.display = "none";
         JoinGameContainer.style.display = "none";
         RevealGameContainer.style.display = "none";
@@ -129,25 +162,26 @@ async function getGameDetails(showSpinner = false){
     }
     if(gamedetail.spentBlockIndex != 0){
         clearInterval(IntervalTx);
+        IntervalTx = null;
     }
     //Claim Player 2
-    if (gamedetail.spentBlockIndex == 0 && gamedetail.stage == 3 && gamedetail.publicKeyPlayer2 ==  UserSession.pubkey?.replace("0x","")){
+    if (gamedetail.spentBlockIndex == 0  && RgameInfo.pendingTransactions.isPending == 0 && gamedetail.stage == 3 && gamedetail.publicKeyPlayer2 ==  UserSession.pubkey?.replace("0x","")){
         ClaimGameContainer.style.display = "block";
         setFeeClaimSelector();
         return;
     }
-    if (gamedetail.spentBlockIndex == 0 && gamedetail.stage == 2  && gamedetail.publicKeyPlayer1 == UserSession.pubkey?.replace("0x","") ){
+    if (gamedetail.spentBlockIndex == 0 && RgameInfo.pendingTransactions.isPending == 0 && gamedetail.stage == 2  && gamedetail.publicKeyPlayer1 == UserSession.pubkey?.replace("0x","") ){
         CloseGameContainer.style.display = "block";
         setFeeCloseSelector();
 
     }
     //Reveal Player 1
-    if (gamedetail.spentBlockIndex == 0 && gamedetail.stage == 3 && UserSession.pubkey && UserSession.pubkey?.replace("0x","") == gamedetail.publicKeyPlayer1){
+    if (gamedetail.spentBlockIndex == 0 && RgameInfo.pendingTransactions.isPending == 0 && gamedetail.stage == 3 && UserSession.pubkey && UserSession.pubkey?.replace("0x","") == gamedetail.publicKeyPlayer1){
         RevealGameContainer.style.display = "block";
         setConfigReveal();
     }
     //Join Player 2
-    if (gamedetail.spentBlockIndex == 0 && gamedetail.stage == 2 && UserSession.pubkey && UserSession.pubkey?.replace("0x","") != gamedetail.publicKeyPlayer1){
+    if (gamedetail.spentBlockIndex == 0 && RgameInfo.pendingTransactions.isPending == 0 && gamedetail.stage == 2 && UserSession.pubkey && UserSession.pubkey?.replace("0x","") != gamedetail.publicKeyPlayer1){
         JoinGameContainer.style.display = "block";
         if(IntervalBalance == null){
             setBalance();
@@ -156,6 +190,7 @@ async function getGameDetails(showSpinner = false){
             }, 30000);
         }
     }
+    return;
 }
 
 async function closeGame(){
@@ -167,6 +202,7 @@ async function closeGame(){
             return false;
             
         }
+        Utils.showSpinner("Connecting to Goby...");
         
         const gobyCoinSpends = [];
         let solution = await UserSession.createSolutionCloseGame(gamedetail.gameAmount, fee);
@@ -197,7 +233,17 @@ async function closeGame(){
             amount: gamedetail.gameAmount,
         });
         const gameCoinId =  gameSmartCoin.getName();
+        if (poolingGameDetailsController) {
+            poolingGameDetailsController.abort();
+            poolingGameDetailsController = null;
+        }
         let ServerTx = await UserSession.closeGame(gameCoinId, fee, signature);
+        Utils.hideSpinner();
+        if (poolingGameDetailsController) {
+            poolingGameDetailsController.abort();
+            poolingGameDetailsController = null;
+        }
+        startPoolingGameDetails();
         console.log("ServerTx:", ServerTx);
         if (!ServerTx.success) {
             Utils.displayToast(ServerTx.message);
@@ -205,14 +251,15 @@ async function closeGame(){
         }
         Utils.displayToast("Transaction sent successfully");
         feeSpendbundle.value = "0";
+        document.getElementById('spinnerPendingTransaction').style.display = "block";
+        
         return true;
     } catch (error) {
+        Utils.hideSpinner();
         console.error("Error in close game:", error);
         return false;
     }
 }
-
-
 async function joinPlayer2(){
     if(selectedOption == null){
         Utils.displayToast("Select a Rock,Paper or Scissors");
@@ -236,6 +283,8 @@ async function joinPlayer2(){
             Utils.displayToast("No coins selected. Insufficient funds.");
             return;
         }
+        Utils.showSpinner("Connecting to Goby...");
+
         const gobyCoinSpends = await UserSession.Goby.createStandarCoinSpends(
             selectedCoins,
             gameWalletPuzzleHash,
@@ -259,7 +308,7 @@ async function joinPlayer2(){
             amount: betAmount
         });
        
-        let solutionJoinPlayer2 = await UserSession.createSolutionJoinPlayer2(selectedOption, cashOutAddressHash, coinId);
+        let solutionJoinPlayer2 = await UserSession.createSolutionJoinPlayer2(selectedOption, cashOutAddressHash, gamedetail.coinId);
         const gameWalletCoinSpend = {
             coin: {
                 // Añadir el objeto coin dentro de una propiedad coin
@@ -298,9 +347,17 @@ async function joinPlayer2(){
             coin_spends: allCoinSpends,
             aggregated_signature: [signature]
         };
-        // let GobyTx = await UserSession.Goby.sendTransaction(spendBundle);
-        // console.log("GobyTx:", GobyTx);
+        if (poolingGameDetailsController) {
+            poolingGameDetailsController.abort();
+            poolingGameDetailsController = null;
+        }
         let ServerTx = await UserSession.joinPlayer2(spendBundle,coinId,gobySmartCoin.getName(),0,selectedOption,cashOutAddressHash,signature);
+        Utils.hideSpinner();
+        if (poolingGameDetailsController) {
+            poolingGameDetailsController.abort();
+            poolingGameDetailsController = null;
+        }
+        startPoolingGameDetails();
         console.log("ServerTx:", ServerTx);
         if (!ServerTx.success) {
             Utils.displayToast("Error sending transaction");
@@ -308,22 +365,22 @@ async function joinPlayer2(){
         }
         Utils.displayToast("Transaction sent successfully, waiting for confirmation");
         feeSpendbundleJoin.value = "0";
-
-
+        document.getElementById('spinnerPendingTransaction').style.display = "block";
+        
         return true;
     } catch (error) {
+        Utils.hideSpinner();
         console.error("Error in joinPlayer1FromGoby:", error);
         return false;
     }
 }
-
 async function revealSelectionPlayer1(){
     //TODO: add fee implementation from goby
     if(selectedOptionReveal.value == "" || keyRPS.value == "" ){
         Utils.displayToast("Select a Rock,Paper or Scissors and enter the Secret key");
         return;
     }
-
+    Utils.showSpinner("Connecting to Goby...");
     const gobyCoinSpends = [];
     let solution = await UserSession.createSolutionRevealGame(parseInt(selectedOptionReveal.value), keyRPS.value, gamedetail.gameAmount);
     const gameCoinSpend = {
@@ -353,12 +410,23 @@ async function revealSelectionPlayer1(){
         amount: gamedetail.gameAmount,
     });
     const gameCoinId =  gameSmartCoin.getName();
-    let ServerTx = await UserSession.revealSelectionPlayer1(coinId,parseInt(selectedOptionReveal.value),keyRPS.value,signature)
+    if (poolingGameDetailsController) {
+        poolingGameDetailsController.abort();
+        poolingGameDetailsController = null;
+    }
+    let ServerTx = await UserSession.revealSelectionPlayer1(gamedetail.coinId,parseInt(selectedOptionReveal.value),keyRPS.value,signature)
+    Utils.hideSpinner();
+    if (poolingGameDetailsController) {
+        poolingGameDetailsController.abort();
+        poolingGameDetailsController = null;
+    }
+    startPoolingGameDetails();
     console.log("ServerTx:", ServerTx);
     if (!ServerTx.success) {
         Utils.displayToast(ServerTx.message);
         return false;
     }
+    document.getElementById('spinnerPendingTransaction').style.display = "block";
     Utils.displayToast("Transaction sent successfully");
     selectedOptionReveal.value = "";
     keyRPS.value = "";
@@ -377,6 +445,7 @@ async function claimGame(){
             return false;
             
         }
+        Utils.showSpinner("Connecting to Goby...");
        
         let solution = await UserSession.createSolutionClaimGame(gamedetail.gameAmount, fee);
         const gameCoinSpend = {
@@ -406,7 +475,18 @@ async function claimGame(){
             amount: gamedetail.gameAmount,
         });
         const gameCoinId =  gameSmartCoin.getName();
+        if (poolingGameDetailsController) {
+            poolingGameDetailsController.abort();
+            poolingGameDetailsController = null;
+        }
         let ServerTx = await UserSession.claimGame(gameCoinId, fee, signature);
+        Utils.hideSpinner();
+
+        if (poolingGameDetailsController) {
+            poolingGameDetailsController.abort();
+            poolingGameDetailsController = null;
+        }
+        startPoolingGameDetails();
         console.log("ServerTx:", ServerTx);
         if (!ServerTx.success) {
             Utils.displayToast(ServerTx.message);
@@ -414,8 +494,11 @@ async function claimGame(){
         }
         Utils.displayToast("Transaction sent successfully");
         feeSpendbundleClaim.value = "";
+        document.getElementById('spinnerPendingTransaction').style.display = "block";
+        
         return true;
     } catch (error) {
+        Utils.hideSpinner();
         console.error("Error in close game:", error);
         return false;
     }
@@ -428,69 +511,6 @@ async function setBalance() {
             UserSession.network == "mainnet"
         );
     });
-}
-async function checkPendingTransaction() {
-    let coinId = window.location.pathname.split("/").pop();
-    const pendingTransactionsContainer = document.getElementById('pendingTransactions');
-    const existingCard = document.getElementById(`card-${coinId}`);
-    const Response = await Utils.getCoinPendingTransaction(coinId);
-
-    // Si no existe el card y hay transacción pendiente, crear nuevo card
-    if (!existingCard && Response.pendingTransaction && Response.pendingTransaction.length > 0) {
-        const transaction = Response.pendingTransaction[0];
-        const coinAmount = Response.coin.amount;
-        
-        const newCard = document.createElement('div');
-        newCard.id = `card-${coinId}`;
-        newCard.className = 'col-md-12 mb-3';
-        newCard.innerHTML = `
-            <div class="card">
-                <div class="card-body">
-                    <button type="button" class="btn-close float-end" aria-label="Close"></button>
-                    <div class="d-flex align-items-center gap-3">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <div class="flex-grow-1">
-                        <h6 class="card-title mb-2 text-white">Pending Transaction</h6>
-                        <div class="transaction-details text-white">
-                        <p class="mb-1"><strong>Amount:</strong> ${Utils.formatMojosPrefix(coinAmount, IS_MAINNET)}</p>
-                        <p class="mb-1"><strong>Fee:</strong> ${Utils.formatMojos(transaction.fee)}</p>
-                        <p class="mb-1"><strong>Action:</strong> ${Response.action}</p>
-                        </div>
-                    </div>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        // Agregar manejador para el botón de cerrar
-        newCard.querySelector('.btn-close').addEventListener('click', () => newCard.remove());
-        pendingTransactionsContainer.appendChild(newCard);
-    }
-    
-    // Si existe el card y no hay transacciones pendientes, actualizar a completado
-    if (existingCard && (!Response.pendingTransaction || Response.pendingTransaction.length === 0)) {
-        existingCard.innerHTML = `
-            <div class="card">
-                <div class="card-body">
-                    <button type="button" class="btn-close float-end" aria-label="Close"></button>
-                    <div class="d-flex align-items-center gap-3">
-                    <i class="fas fa-check-circle text-success fa-2x"></i>
-                    <div class="flex-grow-1">
-                        <h6 class="card-title mb-2 text-white">transaction completed</h6>
-                    </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        // Actualizar manejador del botón de cerrar
-        existingCard.querySelector('.btn-close').addEventListener('click', () => existingCard.remove());
-        return; // No necesitamos seguir monitoreando
-    }
-
-
 }
 function selectOption(value, element) {
     document
@@ -576,5 +596,40 @@ async function handleFileUploadReveal(event) {
             }
         };
         reader.readAsText(file);
+    }
+}
+async function startPoolingGameDetails() {
+    if (poolingGameDetailsController) {
+        poolingGameDetailsController.abort();
+    }
+
+    poolingGameDetailsController = new AbortController();
+    const signal = poolingGameDetailsController.signal;
+
+    try {
+        while (!signal.aborted) {
+            const startTime = Date.now();
+            await getGameDetails(false,signal);
+            
+            if (signal.aborted) break;
+
+            const executionTime = Date.now() - startTime;
+            const remainingTime = Math.max(10000 - executionTime, 0);
+            
+            try {
+                await new Promise((resolve, reject) => {
+                    const timeoutId = setTimeout(resolve, remainingTime);
+                    signal.addEventListener('abort', () => {
+                        clearTimeout(timeoutId);
+                        reject(new Error('Pooling aborted'));
+                    });
+                });
+            } catch (error) {
+                if (error.message === 'Pooling aborted') break;
+                throw error;
+            }
+        }
+    } catch (error) {
+        console.error('Error en pooling:', error);
     }
 }
